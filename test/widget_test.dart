@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inmobiliaria_app/main.dart';
 
 void main() {
+  print("Hello GitHub Desktop");
+
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
