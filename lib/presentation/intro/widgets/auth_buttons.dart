@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:inmobiliaria_app/presentation/auth/pages/login_page.dart';
 import '../bloc/get_started_cubit.dart';
 
 class AuthButtons extends StatelessWidget {
@@ -29,8 +30,13 @@ class AuthButtons extends StatelessWidget {
           const SizedBox(height: 20),
           OutlinedButton(
             onPressed: () {
-              print('[UI] Presionaste INICIAR SESIÓN');
-              context.read<GetStartedCubit>().navigateToLogin();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) => const LoginPage(),
+                ),
+              );
+              print('[UI] Presionaste IniCIAR SESIÓN');
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 15),

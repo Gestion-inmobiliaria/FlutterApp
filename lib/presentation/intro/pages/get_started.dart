@@ -5,6 +5,8 @@ import '../bloc/get_started_cubit.dart';
 import '../bloc/get_started_state.dart';
 import '../widgets/auth_buttons.dart';
 import '../widgets/logo_intro.dart';
+import 'package:inmobiliaria_app/presentation/auth/pages/login_page.dart';
+
 // La clase `GetStartedPage` representa una pantalla de introducción que permite al usuario
 // elegir entre registrarse o iniciar sesión. Utiliza Flutter Bloc para manejar la lógica
 // de navegación basada en el estado.
@@ -25,7 +27,10 @@ class GetStartedPage extends StatelessWidget {
             listener: (context, state) {
               if (state is NavigateToLogin) {
                 // Navega a la pantalla de inicio de sesión si el estado es `NavigateToLogin`.
-                Navigator.pushNamed(context, '/login');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                );
               } else if (state is NavigateToRegister) {
                 // Navega a la pantalla de registro si el estado es `NavigateToRegister`.
                 Navigator.pushNamed(context, '/register');
