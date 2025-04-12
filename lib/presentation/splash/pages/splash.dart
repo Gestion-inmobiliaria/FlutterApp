@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_vectors.dart';
 import 'package:inmobiliaria_app/presentation/intro/pages/get_started.dart';
 
@@ -35,14 +37,23 @@ class _SplashPageState extends State<SplashPage> {
 
   // La función `redirect` espera 2 segundos y luego redirige a la pantalla `GetStartedPage`.
   Future<void> redirect() async {
-    await Future.delayed(const Duration(seconds: 2)); // Espera 2 segundos.
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder:
-            (BuildContext context) =>
-                const GetStartedPage(), // Redirige a `GetStartedPage`.
-      ),
-    );
+    await Future.delayed(const Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (!mounted) return;
+
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const GetStartedPage()),
+      );
+    }
   }
 }

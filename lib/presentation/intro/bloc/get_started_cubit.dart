@@ -4,13 +4,7 @@ import 'get_started_state.dart';
 class GetStartedCubit extends Cubit<GetStartedState> {
   GetStartedCubit() : super(GetStartedInitial());
 
-  void navigateToLogin() {
-    print('[GetStartedCubit] Botón INICIAR SESIÓN presionado');
-    //emit(NavigateToLogin());
-  }
+  void goToLogin() => emit(NavigateToLogin());
 
-  void navigateToRegister() {
-    print('[GetStartedCubit] Botón REGISTRARSE presionado');
-    //emit(NavigateToRegister());
-  }
+  void navigateToRegister() => emit(NavigateToRegister());
 }
