@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:inmobiliaria_app/presentation/auth/pages/sign_up_page.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,6 +74,16 @@ class _LoginPageState extends State<LoginPage> {
                       state is AuthLoading
                           ? const CircularProgressIndicator()
                           : const Text('Ingresar'),
+                ),
+
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SignUpPage()),
+                    );
+                  },
+                  child: const Text('¿No tienes cuenta? Regístrate aquí'),
                 ),
               ],
             ),

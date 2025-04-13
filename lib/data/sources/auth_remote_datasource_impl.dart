@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_remote_datasource.dart';
+import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
 
 // La clase `AuthRemoteDataSourceImpl` implementa la interfaz `AuthRemoteDataSource`.
 // Su objetivo es realizar las operaciones de autenticación directamente con una API remota.
@@ -20,7 +21,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       print('Enviando request al backend...');
       final response = await client.post(
-        Uri.parse('http://10.0.2.2:3000/api/auth/login'),
+        Uri.parse('http://192.168.0.6:3000/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
@@ -36,6 +37,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       print('❌ ERROR al conectar con el backend: $e');
       rethrow;
+    }
+  }
+
+  @override
+  Future<void> register(UserEntity user) async {
+    final url = Uri.parse('http://192.168.0.6:3000/api/auth/register');
+
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'ci': user.ci,
+        'name': user.name,
+        'email': user.email,
+        'password': user.password,
+        'phone': user.phone,
+        'address': user.address,
+        'gender': user.gender,
+      }),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      final message =
+          jsonDecode(response.body)['message'] ?? 'Error desconocido';
+      throw Exception('Registro fallido: $message');
     }
   }
 }

@@ -1,6 +1,6 @@
 import '../../domain/repository/auth_repository.dart';
 import '../sources/auth_remote_datasource.dart';
-
+import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
 // La clase `AuthRepositoryImpl` implementa la interfaz `AuthRepository`.
 // Su objetivo es manejar la lógica de autenticación y delegar las operaciones
 // específicas a la fuente de datos remota (`AuthRemoteDataSource`).
@@ -21,5 +21,10 @@ class AuthRepositoryImpl implements AuthRepository {
   // y delega la operación de inicio de sesión a la fuente de datos remota.
   Future<String> login(String email, String password) {
     return remoteDataSource.login(email, password);
+  }
+
+  @override
+  Future<void> register(UserEntity user) {
+    return remoteDataSource.register(user);
   }
 }

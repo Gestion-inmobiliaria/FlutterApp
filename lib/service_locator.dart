@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
+import 'package:inmobiliaria_app/domain/usecases/register_user_usecase.dart';
 
 import 'domain/usecases/login_user.dart';
 import 'data/repository/auth_repository_impl.dart';
@@ -22,9 +23,10 @@ void setupLocator() {
   // Repository
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
 
-  // UseCase
+  // UseCases
   sl.registerLazySingleton(() => LoginUser(sl()));
+  sl.registerLazySingleton(() => RegisterUserUseCase(sl())); // ✅ nuevo
 
   // Bloc
-  sl.registerFactory(() => AuthBloc(sl()));
+  sl.registerFactory(() => AuthBloc(sl(), sl())); // ✅ actualizado
 }
