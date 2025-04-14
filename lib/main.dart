@@ -4,8 +4,10 @@ import 'package:inmobiliaria_app/core/configs/theme/app_theme.dart';
 import 'package:inmobiliaria_app/presentation/auth/bloc/auth_bloc.dart';
 import 'package:inmobiliaria_app/presentation/splash/pages/splash.dart';
 import 'service_locator.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load();
   setupLocator();
   runApp(BlocProvider(create: (_) => sl<AuthBloc>(), child: const MyApp()));
 }

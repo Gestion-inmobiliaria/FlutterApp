@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_remote_datasource.dart';
 import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // La clase `AuthRemoteDataSourceImpl` implementa la interfaz `AuthRemoteDataSource`.
 // Su objetivo es realizar las operaciones de autenticación directamente con una API remota.
+final baseUrl = dotenv.env['URL_BACKEND']!;
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   // Cliente HTTP utilizado para realizar las solicitudes a la API.
@@ -18,10 +20,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   // Método para iniciar sesión.
   // Este método realiza una solicitud POST a la API con las credenciales del usuario.
   Future<String> login(String email, String password) async {
+    final loginUrl = Uri.parse('$baseUrl/api/auth/customer/login');
     try {
       print('Enviando request al backend...');
       final response = await client.post(
-        Uri.parse('http://192.168.0.6:3000/api/auth/login'),
+        loginUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
@@ -35,17 +38,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw Exception('Error al iniciar sesión: ${response.body}');
       }
     } catch (e) {
-      print('❌ ERROR al conectar con el backend: $e');
+      print('Error en la solicitud: $e');
       rethrow;
     }
   }
 
   @override
   Future<void> register(UserEntity user) async {
-    final url = Uri.parse('http://192.168.0.6:3000/api/auth/register');
+    final registerUrl = Uri.parse('$baseUrl/api/auth/customer/register');
 
     final response = await client.post(
-      url,
+      registerUrl,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'ci': user.ci,

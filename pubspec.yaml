@@ -43,6 +43,7 @@ dependencies:
   flutter_secure_storage:
   get_it:
   json_annotation:
+  flutter_dotenv:
   
 
 dev_dependencies:
@@ -72,6 +73,7 @@ flutter:
      - assets/fonts/
      - assets/images/
      - assets/vectors/
+     - .env
 
 
 

@@ -25,23 +25,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
 
       try {
-        // 1. Registrar el usuario
         await registerUser(event.user);
-
-        // 2. Hacer login automático
         final token = await loginUser(event.user.email, event.user.password);
-
-        // 3. Emitir éxito
         emit(AuthSuccess(token));
       } catch (e) {
-        String msg = e.toString();
-        if (msg.contains('CI')) {
-          emit(AuthFailure('El CI ya está registrado'));
-        } else if (msg.contains('correo')) {
-          emit(AuthFailure('El correo ya está registrado'));
-        } else {
-          emit(AuthFailure('Error al registrarse'));
+        // Intentamos obtener mensaje claro
+        String errorMsg = 'Error al registrarse';
+
+        try {
+          // Intentamos extraer desde la respuesta
+          final errorString = e.toString();
+
+          if (errorString.contains('ci')) {
+            errorMsg = 'El CI ya está registrado';
+          } else if (errorString.contains('correo')) {
+            errorMsg = 'El correo electrónico ya está registrado';
+          } else if (errorString.contains('already exists')) {
+            errorMsg = 'Este dato ya existe en la base de datos';
+          } else {
+            errorMsg = errorString;
+          }
+        } catch (_) {
+          errorMsg = 'Error desconocido al registrarse';
         }
+
+        emit(AuthFailure(errorMsg));
       }
     });
   }
