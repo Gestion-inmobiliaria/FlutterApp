@@ -28,13 +28,12 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registro')),
+      appBar: AppBar(title: const Text('Registro'), centerTitle: true),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) async {
           if (state is AuthSuccess) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('token', state.token);
-
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const HomePage()),
@@ -46,98 +45,149 @@ class _SignUpPageState extends State<SignUpPage> {
           }
         },
         builder: (context, state) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
-              child: ListView(
+              child: Column(
                 children: [
-                  TextFormField(
-                    controller: ciController,
+                  const Icon(
+                    Icons.person_add_alt_1_rounded,
+                    size: 70,
+                    color: Colors.blueAccent,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Crear nueva cuenta',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 32),
+                  _buildField(
+                    'CI',
+                    ciController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'CI'),
-                    validator:
-                        (value) => value!.isEmpty ? 'Campo requerido' : null,
                   ),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                    validator:
-                        (value) => value!.isEmpty ? 'Campo requerido' : null,
+                  _buildField('Nombre', nameController),
+                  _buildField(
+                    'Correo',
+                    emailController,
+                    validator: (value) {
+                      return value != null && value.contains('@')
+                          ? null
+                          : 'Correo inválido';
+                    },
                   ),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Correo'),
-                    validator:
-                        (value) =>
-                            value!.contains('@') ? null : 'Correo inválido',
-                  ),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: const InputDecoration(labelText: 'Contraseña'),
-                    obscureText: true,
+                  _buildField(
+                    'Contraseña',
+                    passwordController,
+                    obscure: true,
                     validator:
                         (value) =>
-                            value!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                            value != null && value.length >= 6
+                                ? null
+                                : 'Mínimo 6 caracteres',
                   ),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Teléfono'),
-                  ),
-                  TextFormField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Dirección'),
-                  ),
+                  _buildField('Teléfono', phoneController),
+                  _buildField('Dirección', addressController),
                   DropdownButtonFormField<String>(
                     value: gender,
                     items:
-                        ['masculino', 'femenino', 'otro']
+                        ['masculino', 'femenino']
                             .map(
                               (g) => DropdownMenuItem(value: g, child: Text(g)),
                             )
                             .toList(),
                     onChanged: (value) => setState(() => gender = value!),
-                    decoration: const InputDecoration(labelText: 'Género'),
+                    decoration: InputDecoration(
+                      labelText: 'Género',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed:
-                        state is AuthLoading
-                            ? null // 🔒 Desactivar el botón mientras se carga
-                            : () {
-                              if (_formKey.currentState!.validate()) {
-                                final user = UserEntity(
-                                  ci: int.parse(ciController.text),
-                                  name: nameController.text,
-                                  email: emailController.text,
-                                  password: passwordController.text,
-                                  phone: phoneController.text,
-                                  address: addressController.text,
-                                  gender: gender,
-                                );
-
-                                context.read<AuthBloc>().add(
-                                  SignUpRequested(user),
-                                );
-                              }
-                            },
-                    child:
-                        state is AuthLoading
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                            : const Text('Registrarse'),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          state is AuthLoading
+                              ? null
+                              : () {
+                                if (_formKey.currentState!.validate()) {
+                                  final user = UserEntity(
+                                    ci: int.parse(ciController.text),
+                                    name: nameController.text,
+                                    email: emailController.text,
+                                    password: passwordController.text,
+                                    phone: phoneController.text,
+                                    address: addressController.text,
+                                    gender: gender,
+                                  );
+                                  context.read<AuthBloc>().add(
+                                    SignUpRequested(user),
+                                  );
+                                }
+                              },
+                      icon:
+                          state is AuthLoading
+                              ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Icon(Icons.check),
+                      label:
+                          state is AuthLoading
+                              ? const Text('Registrando...')
+                              : const Text('Registrarse'),
+                      style: ElevatedButton.styleFrom(
+                        textStyle: const TextStyle(fontSize: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool obscure = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        validator:
+            validator ?? (value) => value!.isEmpty ? 'Campo requerido' : null,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
       ),
     );
   }

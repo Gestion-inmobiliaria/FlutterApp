@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/login_page.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/sign_up_page.dart';
-import '../bloc/get_started_cubit.dart';
 
 class AuthButtons extends StatelessWidget {
   const AuthButtons({super.key});
