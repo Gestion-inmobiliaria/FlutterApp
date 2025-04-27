@@ -33,8 +33,10 @@ class _LoginPageState extends State<LoginPage> {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('token', state.token);
 
-            Navigator.of(context).pushReplacement(
+            Navigator.pushAndRemoveUntil(
+              context,
               MaterialPageRoute(builder: (_) => const HomePage()),
+              (route) => false,
             );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(

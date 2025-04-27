@@ -34,9 +34,10 @@ class _SignUpPageState extends State<SignUpPage> {
           if (state is AuthSuccess) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('token', state.token);
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const HomePage()),
+              (route) => false,
             );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(

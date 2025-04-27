@@ -45,9 +45,10 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const HomePage()),
+        (route) => false,
       );
     } else {
       Navigator.pushReplacement(
