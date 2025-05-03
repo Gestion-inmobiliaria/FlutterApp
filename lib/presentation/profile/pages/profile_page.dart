@@ -34,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/auth/checkToken?token=$token'),
+        Uri.parse('$baseUrl/api/auth/customer/checkToken?token=$token'),
         headers: {'Content-Type': 'application/json'},
       );
 

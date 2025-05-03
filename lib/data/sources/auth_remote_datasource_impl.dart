@@ -22,7 +22,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<String> login(String email, String password) async {
     final loginUrl = Uri.parse('$baseUrl/api/auth/customer/login');
     try {
-      print('Enviando request al backend...');
+      print('loginUrl: $loginUrl');
+
       final response = await client.post(
         loginUrl,
         headers: {'Content-Type': 'application/json'},

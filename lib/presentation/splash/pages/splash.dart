@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
+import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
+import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_vectors.dart';
@@ -47,7 +51,16 @@ class _SplashPageState extends State<SplashPage> {
     if (token != null && token.isNotEmpty) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(
+          builder:
+              (_) => BlocProvider(
+                create:
+                    (_) =>
+                        RealStateBloc(RealStateRemoteDatasource())
+                          ..add(LoadRealStates()),
+                child: const HomePage(),
+              ),
+        ),
         (route) => false,
       );
     } else {
