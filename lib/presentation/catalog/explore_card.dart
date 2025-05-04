@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:inmobiliaria_app/presentation/gap.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
 
-
-
 class ExploreCard extends StatelessWidget {
-//   Tarjeta para explorar propiedades cercanas
-// Incluye imagen, título, calificación y ubicación
-// Tiene botón de "favorito" en la esquina superior derecha
+  //   Tarjeta para explorar propiedades cercanas
+  // Incluye imagen, título, calificación y ubicación
+  // Tiene botón de "favorito" en la esquina superior derecha
   final String title, rating, location, path;
   final bool isHeart;
   const ExploreCard({
@@ -26,8 +24,7 @@ class ExploreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height * 1;
     final width = MediaQuery.of(context).size.width * 1;
-    return Expanded(
-        child: InkWell(
+    return InkWell(
       onTap: () {
         print("cool");
       },
@@ -68,50 +65,54 @@ class ExploreCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
             Gap(isWidth: false, isHeight: true, height: height * 0.01),
             Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall!
-                  .copyWith(fontWeight: FontWeight.w600, fontSize: 18),
+              style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
             ),
             Gap(isWidth: false, isHeight: true, height: height * 0.01),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(
-                      Icons.star,
-                      color: Colors.yellow,
-                    ),
-                    Text(rating)
+                    const Icon(Icons.star, color: Colors.yellow, size: 16),
+                    const SizedBox(width: 4),
+                    Text(rating, style: const TextStyle(fontSize: 12)),
                   ],
                 ),
-                Gap(isWidth: true, isHeight: false, width: width * 0.01),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: AppColors.textPrimary,
-                    ),
-                    Text(
-                      location,
-                      style: Theme.of(context)
-                          .textTheme
-                          .displayMedium!
-                          .copyWith(fontSize: 12),
-                    )
-                  ],
-                )
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        color: AppColors.textPrimary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          location,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displayMedium!.copyWith(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
-    ));
+    );
   }
 }

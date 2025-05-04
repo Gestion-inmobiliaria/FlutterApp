@@ -27,7 +27,9 @@ class PropertyRemoteDatasource {
   Future<List<Property>> fetchProperties() async {
     try {
       final headers = await _getHeaders();
-      debugPrint('Obteniendo todas las propiedades - URL: $baseUrl/api/property');
+      debugPrint(
+        'Obteniendo todas las propiedades - URL: $baseUrl/api/property',
+      );
       final response = await http.get(
         Uri.parse('$baseUrl/api/property'),
         headers: headers,
@@ -37,9 +39,13 @@ class PropertyRemoteDatasource {
         final data = jsonDecode(response.body);
         return (data['data'] as List).map((e) => Property.fromJson(e)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('No autorizado (401): Las credenciales no son válidas o han expirado');
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
       } else {
-        debugPrint('Error fetchProperties: ${response.statusCode} - ${response.body}');
+        debugPrint(
+          'Error fetchProperties: ${response.statusCode} - ${response.body}',
+        );
         throw Exception('Error al cargar propiedades (${response.statusCode})');
       }
     } catch (e) {
@@ -52,7 +58,9 @@ class PropertyRemoteDatasource {
   Future<List<Property>> fetchPropertiesBySector(String sectorId) async {
     try {
       final headers = await _getHeaders();
-      debugPrint('Obteniendo propiedades del sector: $sectorId - URL: $baseUrl/api/property?attr=sector.id&value=$sectorId');
+      debugPrint(
+        'Obteniendo propiedades del sector: $sectorId - URL: $baseUrl/api/property?attr=sector.id&value=$sectorId',
+      );
       final response = await http.get(
         Uri.parse('$baseUrl/api/property?attr=sector.id&value=$sectorId'),
         headers: headers,
@@ -60,13 +68,21 @@ class PropertyRemoteDatasource {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('Propiedades del sector $sectorId: ${data['data']?.length ?? 0}');
+        debugPrint(
+          'Propiedades del sector $sectorId: ${data['data']?.length ?? 0}',
+        );
         return (data['data'] as List).map((e) => Property.fromJson(e)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('No autorizado (401): Las credenciales no son válidas o han expirado');
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
       } else {
-        debugPrint('Error fetchPropertiesBySector: ${response.statusCode} - ${response.body}');
-        throw Exception('Error al cargar propiedades del sector (${response.statusCode})');
+        debugPrint(
+          'Error fetchPropertiesBySector: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Error al cargar propiedades del sector (${response.statusCode})',
+        );
       }
     } catch (e) {
       debugPrint('Exception en fetchPropertiesBySector: $e');
@@ -78,51 +94,58 @@ class PropertyRemoteDatasource {
   Future<List<Property>> fetchPropertiesByRealState(String realStateId) async {
     try {
       final headers = await _getHeaders();
-      debugPrint('Obteniendo propiedades públicas de inmobiliaria: $realStateId');
-      
+      debugPrint(
+        'Obteniendo propiedades públicas de inmobiliaria: $realStateId',
+      );
+
       // Primero intentamos obtener todos los sectores de la inmobiliaria
       final sectorsUri = Uri.parse('$baseUrl/api/sector');
       debugPrint('Obteniendo sectores: $sectorsUri');
-      
-      final sectorsResponse = await http.get(
-        sectorsUri,
-        headers: headers,
-      );
-      
+
+      final sectorsResponse = await http.get(sectorsUri, headers: headers);
+
       if (sectorsResponse.statusCode == 200) {
         final sectorsData = jsonDecode(sectorsResponse.body);
-        final sectors = (sectorsData['data'] as List)
-            .where((sector) => sector['realstate']?['id'] == realStateId)
-            .toList();
-        
-        debugPrint('Sectores encontrados para inmobiliaria $realStateId: ${sectors.length}');
-        
+        final sectors =
+            (sectorsData['data'] as List)
+                .where((sector) => sector['realState']?['id'] == realStateId)
+                .toList();
+
+        debugPrint(
+          'Sectores encontrados para inmobiliaria $realStateId: ${sectors.length}',
+        );
+
         if (sectors.isEmpty) {
           return []; // No hay sectores para esta inmobiliaria
         }
-        
+
         // Recopilamos propiedades de todos los sectores de esta inmobiliaria
         List<Property> allProperties = [];
-        
+
         for (var sector in sectors) {
           try {
             final sectorId = sector['id'];
             final propertiesUri = Uri.parse('$baseUrl/api/property');
             debugPrint('Obteniendo propiedades para sector $sectorId');
-            
+
             final propertiesResponse = await http.get(
               propertiesUri,
               headers: headers,
             );
-            
+
             if (propertiesResponse.statusCode == 200) {
               final propertiesData = jsonDecode(propertiesResponse.body);
-              final sectorProperties = (propertiesData['data'] as List)
-                  .where((property) => property['sector']?['id'] == sectorId)
-                  .map((p) => Property.fromJson(p))
-                  .toList();
-              
-              debugPrint('Propiedades encontradas para sector $sectorId: ${sectorProperties.length}');
+              final sectorProperties =
+                  (propertiesData['data'] as List)
+                      .where(
+                        (property) => property['sector']?['id'] == sectorId,
+                      )
+                      .map((p) => Property.fromJson(p))
+                      .toList();
+
+              debugPrint(
+                'Propiedades encontradas para sector $sectorId: ${sectorProperties.length}',
+              );
               allProperties.addAll(sectorProperties);
             }
           } catch (e) {
@@ -130,15 +153,19 @@ class PropertyRemoteDatasource {
             // Continuamos con el siguiente sector
           }
         }
-        
+
         debugPrint('Total propiedades encontradas: ${allProperties.length}');
         return allProperties;
       } else if (sectorsResponse.statusCode == 401) {
         // No estamos autorizados, error que será manejado por el Bloc
         debugPrint('No autorizado (401) al obtener sectores');
-        throw Exception('No autorizado (401): Las credenciales no son válidas o han expirado');
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
       } else {
-        throw Exception('Error al cargar sectores (${sectorsResponse.statusCode})');
+        throw Exception(
+          'Error al cargar sectores (${sectorsResponse.statusCode})',
+        );
       }
     } catch (e) {
       debugPrint('Error general en fetchPropertiesByRealState: $e');
@@ -160,14 +187,20 @@ class PropertyRemoteDatasource {
         final data = jsonDecode(response.body);
         return Property.fromJson(data['data']);
       } else if (response.statusCode == 401) {
-        throw Exception('No autorizado (401): Las credenciales no son válidas o han expirado');
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
       } else {
-        debugPrint('Error fetchPropertyDetail: ${response.statusCode} - ${response.body}');
-        throw Exception('Error al cargar detalle de propiedad (${response.statusCode})');
+        debugPrint(
+          'Error fetchPropertyDetail: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Error al cargar detalle de propiedad (${response.statusCode})',
+        );
       }
     } catch (e) {
       debugPrint('Exception en fetchPropertyDetail: $e');
       throw Exception('Error al obtener detalle de propiedad: $e');
     }
   }
-} 
+}

@@ -5,6 +5,7 @@ import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:inmobiliaria_app/presentation/home/widgets/recommendation_section.dart';
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -61,13 +62,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  final storage = FlutterSecureStorage();
+
   Future<void> fetchInmobiliarias() async {
     final baseUrl = dotenv.env['URL_BACKEND']!;
+    final token = await storage.read(
+      key: 'jwt',
+    ); // Asegúrate que el token está guardado
 
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/realstate'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
       );
 
       if (response.statusCode == 200) {
