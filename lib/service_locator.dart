@@ -8,6 +8,7 @@ import 'data/sources/auth_remote_datasource.dart';
 import 'data/sources/auth_remote_datasource_impl.dart';
 import 'domain/repository/auth_repository.dart';
 import 'presentation/auth/bloc/auth_bloc.dart';
+import 'package:inmobiliaria_app/data/sources/property_remote_datasource.dart';
 
 final sl = GetIt.instance;
 
@@ -18,6 +19,11 @@ void setupLocator() {
   // DataSource
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(client: sl()),
+  );
+
+  // Datasources
+  sl.registerLazySingleton<PropertyRemoteDatasource>(
+    () => PropertyRemoteDatasource(),
   );
 
   // Repository

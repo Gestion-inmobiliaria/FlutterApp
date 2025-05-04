@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
+import 'package:inmobiliaria_app/data/sources/property_remote_datasource.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/property_bloc.dart';
+import 'package:inmobiliaria_app/presentation/catalog/pages/catalog_page.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_state.dart';
@@ -52,6 +54,8 @@ class RecommendationSection extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return _buildRecommendationCard(
+                      context: context,
+                      realStateId: item.id,
                       company: item.name,
                       location: item.address ?? 'Sin dirección',
                       role: 'Ver inmuebles disponibles',
@@ -76,6 +80,8 @@ class RecommendationSection extends StatelessWidget {
   }
 
   Widget _buildRecommendationCard({
+    required BuildContext context,
+    required String realStateId,
     required String company,
     required String location,
     required String role,
@@ -173,24 +179,9 @@ class RecommendationSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3F6CDF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Ver Inmuebles',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
-                  ),
-                ),
+              _ViewPropertiesButton(
+                realStateId: realStateId,
+                realStateName: company,
               ),
             ],
           ),
@@ -209,6 +200,105 @@ class RecommendationSection extends StatelessWidget {
           color: Color(0xFF8F9298),
           fontFamily: 'Inter',
         ),
+      ),
+    );
+  }
+}
+
+class _ViewPropertiesButton extends StatefulWidget {
+  final String realStateId;
+  final String realStateName;
+
+  const _ViewPropertiesButton({
+    required this.realStateId,
+    required this.realStateName,
+  });
+
+  @override
+  State<_ViewPropertiesButton> createState() => _ViewPropertiesButtonState();
+}
+
+class _ViewPropertiesButtonState extends State<_ViewPropertiesButton> {
+  bool _isLoading = false;
+
+  void _navigateToPropertiesCatalog() async {
+    // Evitar múltiples clics mientras se procesa
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 300)); // Simular carga
+
+      if (!mounted) return;
+
+      // Navegar a la página de catálogo 
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => BlocProvider(
+            create: (context) => PropertyBloc(
+              propertyDatasource: PropertyRemoteDatasource(),
+            ),
+            child: CatalogPage(
+              realStateId: widget.realStateId,
+              realStateName: widget.realStateName,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Mostrar un snackbar en caso de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar propiedades: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      // Asegurarse de restaurar el estado si el widget sigue montado
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _navigateToPropertiesCatalog,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3F6CDF),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Ver Inmuebles',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Inter',
+                ),
+              ),
       ),
     );
   }
