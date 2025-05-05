@@ -4,6 +4,7 @@ import 'package:inmobiliaria_app/presentation/catalog/bloc/property_bloc.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_event.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_state.dart';
 import 'package:inmobiliaria_app/presentation/catalog/explore_card.dart';
+import 'package:inmobiliaria_app/presentation/catalog/pages/filter_page.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
 
 class CatalogPage extends StatefulWidget {
@@ -23,6 +24,18 @@ class CatalogPage extends StatefulWidget {
 class _CatalogPageState extends State<CatalogPage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isRetrying = false;
+  PropertyFilter _currentFilter = const PropertyFilter();
+  
+  // Lista de imágenes disponibles en assets
+  final List<String> _assetImages = [
+    'assets/images/property.jpg',
+    'assets/images/property1.jpg',
+    'assets/images/property2.jpg',
+    'assets/images/product1.png',
+    'assets/images/product2.png',
+    'assets/images/product3.png',
+    'assets/images/product4.png',
+  ];
 
   @override
   void initState() {
@@ -43,10 +56,48 @@ class _CatalogPageState extends State<CatalogPage> {
         ));
   }
 
+  // Obtener una imagen aleatoria de los assets
+  String _getAssetImage(int index) {
+    return _assetImages[index % _assetImages.length];
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Mostrar el diálogo de filtros
+  Future<void> _showFilterDialog() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FilterPage(
+          initialFilter: _currentFilter,
+        ),
+      ),
+    );
+    
+    if (result != null && result is PropertyFilter) {
+      setState(() {
+        _currentFilter = result;
+      });
+      
+      if (result.isActive) {
+        context.read<PropertyBloc>().add(ApplyFilters(result));
+      } else {
+        context.read<PropertyBloc>().add(ClearFilters());
+      }
+    }
+  }
+
+  // Quitar filtros
+  void _clearFilters() {
+    setState(() {
+      _currentFilter = const PropertyFilter();
+    });
+    _searchController.text = ''; // Limpiar también la búsqueda
+    context.read<PropertyBloc>().add(ClearFilters());
   }
 
   @override
@@ -67,22 +118,119 @@ class _CatalogPageState extends State<CatalogPage> {
       ),
       body: Column(
         children: [
-          // Barra de búsqueda
+          // Barra de búsqueda y filtros
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar propiedades...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            child: Row(
+              children: [
+                // Barra de búsqueda
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar propiedades...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.inputBackground,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                  ),
                 ),
-                filled: true,
-                fillColor: AppColors.inputBackground,
-              ),
+                
+                // Botón de filtros
+                const SizedBox(width: 12),
+                BlocBuilder<PropertyBloc, PropertyState>(
+                  builder: (context, state) {
+                    bool hasActiveFilters = false;
+                    if (state is PropertyLoaded) {
+                      hasActiveFilters = state.activeFilter != null && state.activeFilter!.isActive;
+                    }
+                    
+                    return ElevatedButton(
+                      onPressed: hasActiveFilters 
+                        ? _clearFilters 
+                        : _showFilterDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: hasActiveFilters
+                            ? Colors.red.shade50
+                            : AppColors.primaryColor.withOpacity(0.1),
+                        foregroundColor: hasActiveFilters
+                            ? Colors.red
+                            : AppColors.primaryColor,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            hasActiveFilters ? Icons.filter_list_off : Icons.filter_list,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(hasActiveFilters ? 'Sin filtros' : 'Filtros'),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
+          ),
+          
+          // Indicador de filtros activos
+          BlocBuilder<PropertyBloc, PropertyState>(
+            builder: (context, state) {
+              if (state is PropertyLoaded && 
+                  state.activeFilter != null && 
+                  state.activeFilter!.isActive) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.filter_alt,
+                        size: 16,
+                        color: AppColors.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Filtros: ${state.activeFilter.toString()}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primaryColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _clearFilters,
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
           
           // Listado de propiedades
@@ -166,28 +314,40 @@ class _CatalogPageState extends State<CatalogPage> {
                 }
                 
                 if (state is PropertyLoaded) {
-                  final properties = state.properties;
+                  final displayProperties = state.filteredProperties;
                   
-                  if (properties.isEmpty) {
-                    return const Center(
+                  if (displayProperties.isEmpty) {
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.home_work_outlined, size: 60, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No hay propiedades disponibles',
+                          const Icon(Icons.search_off, size: 60, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No se encontraron propiedades',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
-                            'Esta inmobiliaria no tiene propiedades en este momento',
+                            state.activeFilter != null && state.activeFilter!.isActive
+                                ? 'Ninguna propiedad coincide con los filtros aplicados'
+                                : 'No hay propiedades disponibles en este momento',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
+                            style: const TextStyle(color: Colors.grey),
                           ),
+                          const SizedBox(height: 24),
+                          if (state.activeFilter != null && state.activeFilter!.isActive)
+                            ElevatedButton(
+                              onPressed: _clearFilters,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Quitar filtros'),
+                            ),
                         ],
                       ),
                     );
@@ -244,6 +404,22 @@ class _CatalogPageState extends State<CatalogPage> {
                           ),
                         ),
                       
+                      // Contador de resultados
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Mostrando ${displayProperties.length} propiedades',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
                       // Grid de propiedades
                       Expanded(
                         child: Padding(
@@ -251,16 +427,15 @@ class _CatalogPageState extends State<CatalogPage> {
                           child: GridView.builder(
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              childAspectRatio: 0.75,
+                              childAspectRatio: 0.85,
                               crossAxisSpacing: 16,
                               mainAxisSpacing: 16,
                             ),
-                            itemCount: properties.length,
+                            itemCount: displayProperties.length,
                             itemBuilder: (context, index) {
-                              final property = properties[index];
-                              final imageUrl = property.imagenes != null && property.imagenes!.isNotEmpty
-                                  ? property.imagenes!.first
-                                  : 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+                              final property = displayProperties[index];
+                              // Usar imagen local de assets en lugar de red
+                              final String imagePath = _getAssetImage(index);
                               
                               // Extraer información de ubicación
                               final location = property.ubicacion?['direccion'] ?? 'Sin ubicación';
@@ -269,8 +444,11 @@ class _CatalogPageState extends State<CatalogPage> {
                                 title: property.descripcion,
                                 rating: '${property.precio}€',
                                 location: location.toString(),
-                                path: imageUrl,
+                                path: imagePath,
                                 isHeart: false,
+                                isNetworkImage: false,
+                                property: property,
+                                realStateName: widget.realStateName,
                               );
                             },
                           ),

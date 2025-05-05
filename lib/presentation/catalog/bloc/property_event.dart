@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:inmobiliaria_app/presentation/catalog/pages/filter_page.dart';
 
 abstract class PropertyEvent extends Equatable {
   const PropertyEvent();
@@ -40,9 +41,24 @@ class SearchProperties extends PropertyEvent {
 
 class ToggleFavorite extends PropertyEvent {
   final String propertyId;
+  final bool isFavorite;
 
-  const ToggleFavorite(this.propertyId);
+  const ToggleFavorite({
+    required this.propertyId,
+    required this.isFavorite,
+  });
 
   @override
-  List<Object?> get props => [propertyId];
-} 
+  List<Object?> get props => [propertyId, isFavorite];
+}
+
+class ApplyFilters extends PropertyEvent {
+  final PropertyFilter filter;
+
+  const ApplyFilters(this.filter);
+
+  @override
+  List<Object?> get props => [filter];
+}
+
+class ClearFilters extends PropertyEvent {} 
