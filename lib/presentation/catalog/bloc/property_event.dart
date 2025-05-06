@@ -21,6 +21,12 @@ class LoadProperties extends PropertyEvent {
   List<Object?> get props => [realStateId, realStateName];
 }
 
+class LoadPropertiesWithLocation extends PropertyEvent {
+  final String realStateId;
+
+  const LoadPropertiesWithLocation({required this.realStateId});
+}
+
 class LoadPropertyDetail extends PropertyEvent {
   final String propertyId;
 
@@ -43,10 +49,7 @@ class ToggleFavorite extends PropertyEvent {
   final String propertyId;
   final bool isFavorite;
 
-  const ToggleFavorite({
-    required this.propertyId,
-    required this.isFavorite,
-  });
+  const ToggleFavorite({required this.propertyId, required this.isFavorite});
 
   @override
   List<Object?> get props => [propertyId, isFavorite];
@@ -61,4 +64,4 @@ class ApplyFilters extends PropertyEvent {
   List<Object?> get props => [filter];
 }
 
-class ClearFilters extends PropertyEvent {} 
+class ClearFilters extends PropertyEvent {}

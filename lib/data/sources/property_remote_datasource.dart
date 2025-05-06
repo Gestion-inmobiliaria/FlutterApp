@@ -174,6 +174,92 @@ class PropertyRemoteDatasource {
     }
   }
 
+  // Obtener solo propiedades con ubicación (lat/lng) para una inmobiliaria
+  Future<List<Property>> fetchPropertiesWithLocationByRealState(
+    String realStateId,
+  ) async {
+    try {
+      final headers = await _getHeaders();
+      debugPrint(
+        '📡 Obteniendo propiedades CON UBICACIÓN de inmobiliaria: $realStateId',
+      );
+
+      final sectorsUri = Uri.parse('$baseUrl/api/sector');
+      final sectorsResponse = await http.get(sectorsUri, headers: headers);
+
+      if (sectorsResponse.statusCode == 200) {
+        final sectorsData = jsonDecode(sectorsResponse.body);
+        final sectors =
+            (sectorsData['data'] as List)
+                .where((sector) => sector['realState']?['id'] == realStateId)
+                .toList();
+
+        final sectorIds = sectors.map((s) => s['id']).toSet();
+        debugPrint('📍 Sector IDs de esta inmobiliaria: $sectorIds');
+
+        if (sectorIds.isEmpty) {
+          debugPrint('⚠️ No hay sectores asociados a esta inmobiliaria.');
+          return [];
+        }
+
+        final propertiesUri = Uri.parse('$baseUrl/api/property');
+        final propertiesResponse = await http.get(
+          propertiesUri,
+          headers: headers,
+        );
+
+        if (propertiesResponse.statusCode == 200) {
+          final propertiesData = jsonDecode(propertiesResponse.body);
+          final allProps = propertiesData['data'] as List;
+
+          debugPrint('🔍 Total propiedades obtenidas: ${allProps.length}');
+
+          int countWithUbicacion = 0;
+
+          final filtered =
+              allProps
+                  .where((property) {
+                    final desc = property['descripcion'];
+                    final sectorId = property['sector']?['id'];
+                    final u = property['ubicacion'];
+                    final lat = u?['latitud'];
+                    final lng = u?['longitud'];
+
+                    final hasUbicacion =
+                        u != null && lat != null && lng != null;
+                    final isFromValidSector = sectorIds.contains(sectorId);
+                    final shouldInclude = hasUbicacion && isFromValidSector;
+
+                    debugPrint(
+                      '➡ Eval: "$desc" | sectorId: $sectorId | lat: $lat | lng: $lng | include: $shouldInclude',
+                    );
+
+                    if (shouldInclude) countWithUbicacion++;
+                    return shouldInclude;
+                  })
+                  .map((p) => Property.fromJson(p))
+                  .toList();
+
+          debugPrint(
+            '✅ Propiedades con ubicación válidas: $countWithUbicacion',
+          );
+          return filtered;
+        } else {
+          throw Exception(
+            '❌ Error al cargar propiedades (${propertiesResponse.statusCode})',
+          );
+        }
+      } else {
+        throw Exception(
+          '❌ Error al cargar sectores (${sectorsResponse.statusCode})',
+        );
+      }
+    } catch (e) {
+      debugPrint('💥 Error en fetchPropertiesWithLocationByRealState: $e');
+      throw Exception('Error al obtener propiedades con ubicación: $e');
+    }
+  }
+
   // Obtener detalle de una propiedad
   Future<Property> fetchPropertyDetail(String propertyId) async {
     try {

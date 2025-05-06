@@ -13,11 +13,11 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   String _currentRealStateId = '';
   String _currentRealStateName = '';
 
-  PropertyBloc({
-    required PropertyRemoteDatasource propertyDatasource,
-  })  : _propertyDatasource = propertyDatasource,
-        super(PropertyInitial()) {
+  PropertyBloc({required PropertyRemoteDatasource propertyDatasource})
+    : _propertyDatasource = propertyDatasource,
+      super(PropertyInitial()) {
     on<LoadProperties>(_onLoadProperties);
+    on<LoadPropertiesWithLocation>(_onLoadPropertiesWithLocation);
     on<LoadPropertyDetail>(_onLoadPropertyDetail);
     on<SearchProperties>(_onSearchProperties);
     on<ToggleFavorite>(_onToggleFavorite);
@@ -33,42 +33,52 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     try {
       _currentRealStateId = event.realStateId;
       _currentRealStateName = event.realStateName;
-      
-      debugPrint('Cargando propiedades para inmobiliaria: $_currentRealStateId');
-      
+
+      debugPrint(
+        'Cargando propiedades para inmobiliaria: $_currentRealStateId',
+      );
+
       // Verificamos si hay token de usuario
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
-      
+
       // Si no hay token, mostramos mensaje de login opcional
       if (token == null || token.isEmpty) {
         debugPrint('No hay token. Usuario no autenticado.');
       }
-      
-      final properties = await _propertyDatasource.fetchPropertiesByRealState(event.realStateId);
+
+      final properties = await _propertyDatasource.fetchPropertiesByRealState(
+        event.realStateId,
+      );
       _allProperties = properties;
-      
+
       debugPrint('Propiedades cargadas: ${properties.length}');
-      emit(PropertyLoaded(
-        properties: properties,
-        realStateId: event.realStateId,
-        realStateName: event.realStateName,
-      ));
+      emit(
+        PropertyLoaded(
+          properties: properties,
+          realStateId: event.realStateId,
+          realStateName: event.realStateName,
+        ),
+      );
     } catch (e) {
       debugPrint('Error al cargar propiedades: $e');
-      
-      if (e.toString().contains('401') || e.toString().contains('no autorizado')) {
+
+      if (e.toString().contains('401') ||
+          e.toString().contains('no autorizado')) {
         // Error de autenticación, mostrar propiedades de muestra
         final mockProperties = _getMockProperties();
         _allProperties = mockProperties;
-        
-        emit(PropertyLoaded(
-          properties: mockProperties,
-          realStateId: event.realStateId,
-          realStateName: event.realStateName,
-          isAuthError: true,
-          authErrorMessage: 'Sesión no iniciada o expirada. Mostrando datos de ejemplo.',
-        ));
+
+        emit(
+          PropertyLoaded(
+            properties: mockProperties,
+            realStateId: event.realStateId,
+            realStateName: event.realStateName,
+            isAuthError: true,
+            authErrorMessage:
+                'Sesión no iniciada o expirada. Mostrando datos de ejemplo.',
+          ),
+        );
       } else {
         // Otro tipo de error
         emit(PropertyError(e.toString()));
@@ -87,7 +97,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
           (p) => p.id == event.propertyId,
           orElse: () => throw Exception('Propiedad no encontrada'),
         );
-        
+
         emit(PropertyDetailLoaded(property));
       } else {
         // TODO: Implementar carga individual de propiedad desde API
@@ -105,38 +115,43 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     if (state is PropertyLoaded) {
       final currentState = state as PropertyLoaded;
       final query = event.query.toLowerCase();
-      
+
       // Verificar si hay filtros activos realmente
-      final hasActiveFilters = currentState.activeFilter != null && currentState.activeFilter!.isActive;
-      
+      final hasActiveFilters =
+          currentState.activeFilter != null &&
+          currentState.activeFilter!.isActive;
+
       if (query.isEmpty) {
         // Si la búsqueda está vacía, simplemente aplicamos los filtros activos si hay
         if (hasActiveFilters) {
           final filteredProperties = _applyFilterToProperties(
-            _allProperties, 
+            _allProperties,
             currentState.activeFilter!,
           );
-          
-          emit(currentState.copyWith(
-            filteredProperties: filteredProperties,
-          ));
+
+          emit(currentState.copyWith(filteredProperties: filteredProperties));
         } else {
           // Sin filtros y sin búsqueda, mostrar todas
-          emit(currentState.copyWith(
-            filteredProperties: _allProperties,
-          ));
+          emit(currentState.copyWith(filteredProperties: _allProperties));
         }
       } else {
         // Filtrar por búsqueda
-        List<Property> searchResults = _allProperties.where((property) {
-          final matchesDescription = property.descripcion.toLowerCase().contains(query);
-          final matchesLocation = property.ubicacion != null &&
-              property.ubicacion!['direccion'] != null &&
-              property.ubicacion!['direccion'].toString().toLowerCase().contains(query);
-          
-          return matchesDescription || matchesLocation;
-        }).toList();
-        
+        List<Property> searchResults =
+            _allProperties.where((property) {
+              final matchesDescription = property.descripcion
+                  .toLowerCase()
+                  .contains(query);
+              final matchesLocation =
+                  property.ubicacion != null &&
+                  property.ubicacion!['direccion'] != null &&
+                  property.ubicacion!['direccion']
+                      .toString()
+                      .toLowerCase()
+                      .contains(query);
+
+              return matchesDescription || matchesLocation;
+            }).toList();
+
         // Si hay filtros activos, aplicarlos sobre los resultados de búsqueda
         if (hasActiveFilters) {
           searchResults = _applyFilterToProperties(
@@ -144,18 +159,13 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
             currentState.activeFilter!,
           );
         }
-        
-        emit(currentState.copyWith(
-          filteredProperties: searchResults,
-        ));
+
+        emit(currentState.copyWith(filteredProperties: searchResults));
       }
     }
   }
 
-  void _onToggleFavorite(
-    ToggleFavorite event,
-    Emitter<PropertyState> emit,
-  ) {
+  void _onToggleFavorite(ToggleFavorite event, Emitter<PropertyState> emit) {
     // Aquí se implementaría la lógica para marcar/desmarcar favoritos
     // Por ahora solo manejamos el estado actual
     if (state is PropertyLoaded) {
@@ -163,45 +173,43 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
       emit(currentState);
     }
   }
-  
-  void _onApplyFilters(
-    ApplyFilters event,
-    Emitter<PropertyState> emit,
-  ) {
+
+  void _onApplyFilters(ApplyFilters event, Emitter<PropertyState> emit) {
     if (state is PropertyLoaded) {
       final currentState = state as PropertyLoaded;
       final filteredProperties = _applyFilterToProperties(
-        _allProperties, 
+        _allProperties,
         event.filter,
       );
-      
-      emit(currentState.copyWith(
-        activeFilter: event.filter,
-        filteredProperties: filteredProperties,
-      ));
+
+      emit(
+        currentState.copyWith(
+          activeFilter: event.filter,
+          filteredProperties: filteredProperties,
+        ),
+      );
     }
   }
-  
-  void _onClearFilters(
-    ClearFilters event,
-    Emitter<PropertyState> emit,
-  ) {
+
+  void _onClearFilters(ClearFilters event, Emitter<PropertyState> emit) {
     if (state is PropertyLoaded) {
       final currentState = state as PropertyLoaded;
-      
+
       // Asegurarse de que activeFilter sea null y se muestren todas las propiedades
-      emit(PropertyLoaded(
-        properties: _allProperties,
-        realStateId: currentState.realStateId,
-        realStateName: currentState.realStateName,
-        isAuthError: currentState.isAuthError,
-        authErrorMessage: currentState.authErrorMessage,
-        activeFilter: null,
-        filteredProperties: _allProperties,
-      ));
+      emit(
+        PropertyLoaded(
+          properties: _allProperties,
+          realStateId: currentState.realStateId,
+          realStateName: currentState.realStateName,
+          isAuthError: currentState.isAuthError,
+          authErrorMessage: currentState.authErrorMessage,
+          activeFilter: null,
+          filteredProperties: _allProperties,
+        ),
+      );
     }
   }
-  
+
   List<Property> _applyFilterToProperties(
     List<Property> properties,
     PropertyFilter filter,
@@ -209,60 +217,95 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     return properties.where((property) {
       // Filtro de precio
       if (filter.priceRange != null) {
-        if (property.precio < filter.priceRange!.start || 
+        if (property.precio < filter.priceRange!.start ||
             property.precio > filter.priceRange!.end) {
           return false;
         }
       }
-      
+
       // Filtro de ubicación
       if (filter.location != null && filter.location!.isNotEmpty) {
         final String locationQuery = filter.location!.toLowerCase();
-        final bool locationMatches = property.ubicacion != null &&
+        final bool locationMatches =
+            property.ubicacion != null &&
             property.ubicacion!['direccion'] != null &&
-            property.ubicacion!['direccion'].toString().toLowerCase().contains(locationQuery);
-        
+            property.ubicacion!['direccion'].toString().toLowerCase().contains(
+              locationQuery,
+            );
+
         if (!locationMatches) {
           return false;
         }
       }
-      
+
       // Filtro de área
       if (filter.areaRange != null) {
-        if (property.area < filter.areaRange!.start || 
+        if (property.area < filter.areaRange!.start ||
             property.area > filter.areaRange!.end) {
           return false;
         }
       }
-      
+
       // Filtro de habitaciones
       if (filter.minBedrooms != null && filter.minBedrooms! > 0) {
-        if (property.nroHabitaciones == null || 
+        if (property.nroHabitaciones == null ||
             property.nroHabitaciones! < filter.minBedrooms!) {
           return false;
         }
       }
-      
+
       // Filtro de baños
       if (filter.minBathrooms != null && filter.minBathrooms! > 0) {
-        if (property.nroBanos == null || 
+        if (property.nroBanos == null ||
             property.nroBanos! < filter.minBathrooms!) {
           return false;
         }
       }
-      
+
       // Filtro de estacionamientos
       if (filter.minParkingSpots != null && filter.minParkingSpots! > 0) {
-        if (property.nroEstacionamientos == null || 
+        if (property.nroEstacionamientos == null ||
             property.nroEstacionamientos! < filter.minParkingSpots!) {
           return false;
         }
       }
-      
+
       return true;
     }).toList();
   }
-  
+
+  Future<void> _onLoadPropertiesWithLocation(
+    LoadPropertiesWithLocation event,
+    Emitter<PropertyState> emit,
+  ) async {
+    emit(PropertyLoading());
+    try {
+      final properties = await _propertyDatasource
+          .fetchPropertiesWithLocationByRealState(event.realStateId);
+      print('properties dasdasda: $properties.length');
+      _currentRealStateId = event.realStateId;
+      final propertiesWithLocation =
+          properties.where((p) {
+            final lat = p.ubicacion?['latitud'];
+            final lng = p.ubicacion?['longitud'];
+            return lat != null &&
+                lng != null &&
+                lat.toString().isNotEmpty &&
+                lng.toString().isNotEmpty;
+          }).toList();
+
+      emit(
+        PropertyLoaded(
+          properties: propertiesWithLocation,
+          realStateId: event.realStateId,
+          realStateName: _currentRealStateName,
+        ),
+      );
+    } catch (e) {
+      emit(PropertyError('Error al cargar propiedades con ubicación: $e'));
+    }
+  }
+
   // Proporciona propiedades de muestra en caso de error de autenticación
   List<Property> _getMockProperties() {
     debugPrint('Generando propiedades de muestra para mostrar al usuario');
@@ -329,4 +372,4 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
       ),
     ];
   }
-} 
+}
