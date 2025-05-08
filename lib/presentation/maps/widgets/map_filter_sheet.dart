@@ -121,7 +121,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
             isExpanded: true,
             hint: const Text("Todas"),
             items:
-                ['venta', 'alquiler']
+                ['Venta', 'Anticrético', 'Alquiler']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
             onChanged: (v) => setState(() => tempModalidad = v),
@@ -133,7 +133,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
             isExpanded: true,
             hint: const Text("Todas"),
             items:
-                ['departamento', 'casa', 'local']
+                ['Casa', 'Departamento', 'Terreno']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
             onChanged: (v) => setState(() => tempCategoria = v),

@@ -29,6 +29,16 @@ class _MapWidgetState extends State<MapWidget> {
     return _assetImages[index % _assetImages.length];
   }
 
+  String _getIconForProperty(Property property) {
+    final name = property.inmobiliaria?.toLowerCase() ?? '';
+
+    if (name.contains('remax')) return 'assets/icons/remax.png';
+    if (name.contains('century') || name.contains('c21'))
+      return 'assets/icons/c21.png';
+
+    return 'assets/icons/default.png';
+  }
+
   // Lista de imágenes disponibles en assets
   final List<String> _assetImages = [
     'assets/images/property.jpg',
@@ -69,10 +79,15 @@ class _MapWidgetState extends State<MapWidget> {
             final estadoMatch = estado == null || p.estado == estado;
             final modalidadMatch =
                 modalidad == null ||
-                p.modalidad?.toLowerCase() == modalidad!.toLowerCase();
+                (p.modalidad != null &&
+                    p.modalidad!.trim().toLowerCase() ==
+                        modalidad!.trim().toLowerCase());
+
             final categoriaMatch =
                 categoria == null ||
-                p.categoria?.toLowerCase() == categoria!.toLowerCase();
+                (p.categoria != null &&
+                    p.categoria!.trim().toLowerCase() ==
+                        categoria!.trim().toLowerCase());
 
             final isWithinDistance =
                 userLocation == null || maxDistanceKm == null
@@ -182,10 +197,9 @@ class _MapWidgetState extends State<MapWidget> {
                   double.parse(p.ubicacion!['longitud']),
                 ),
                 child: Image.asset(
-                  'assets/icons/c21.png',
-                  width: 15,
-                  height: 15,
-                  fit: BoxFit.contain,
+                  _getIconForProperty(p), // <- ya definido
+                  width: 24,
+                  height: 24,
                 ),
               ),
             )
@@ -225,28 +239,34 @@ class _MapWidgetState extends State<MapWidget> {
               ),
             MarkerLayer(
               markers:
-                  propertyMarkers.map((marker) {
-                    final property =
-                        propertyMap[(marker.key as ValueKey<String>).value];
-                    return Marker(
-                      key: marker.key,
-                      width: 40,
-                      height: 40,
-                      point: marker.point,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedProperty = property;
-                          });
-                        },
-                        child: Image.asset(
-                          'assets/icons/c21.png',
-                          width: 24,
-                          height: 24,
+                  filteredProperties
+                      .where(
+                        (p) =>
+                            p.ubicacion?['latitud'] != null &&
+                            p.ubicacion?['longitud'] != null,
+                      )
+                      .map(
+                        (p) => Marker(
+                          key: ValueKey(p.id),
+                          width: 40,
+                          height: 40,
+                          point: LatLng(
+                            double.parse(p.ubicacion!['latitud']),
+                            double.parse(p.ubicacion!['longitud']),
+                          ),
+                          child: GestureDetector(
+                            onTap: () => setState(() => selectedProperty = p),
+                            child: Image.asset(
+                              _getIconForProperty(
+                                p,
+                              ), // ← ícono por inmobiliaria
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      )
+                      .toList(),
             ),
 
             if (userLocation != null)

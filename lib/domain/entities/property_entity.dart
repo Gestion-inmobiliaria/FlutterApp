@@ -10,6 +10,7 @@ class Property {
   final String? categoria;
   final String? modalidad;
   final String? sectorId;
+  final String? inmobiliaria;
   final List<String>? imagenes;
   final Map<String, dynamic>? ubicacion;
 
@@ -25,6 +26,7 @@ class Property {
     this.categoria,
     this.modalidad,
     this.sectorId,
+    this.inmobiliaria,
     this.imagenes,
     this.ubicacion,
   });
@@ -39,13 +41,15 @@ class Property {
       nroHabitaciones: json['NroHabitaciones'],
       nroBanos: json['NroBanos'],
       nroEstacionamientos: json['NroEstacionamientos'],
-      categoria: json['category']?['nombre'],
-      modalidad: json['modality']?['nombre'],
+      categoria: json['category']?['name'],
+      modalidad: json['modality']?['name'],
       sectorId: json['sector']?['id'],
-      imagenes: json['imagenes'] != null
-          ? List<String>.from(json['imagenes'].map((img) => img['url']))
-          : [],
+      inmobiliaria: json['sector']?['realState']?['name'],
+      imagenes:
+          json['imagenes'] != null
+              ? List<String>.from(json['imagenes'].map((img) => img['url']))
+              : [],
       ubicacion: json['ubicacion'],
     );
   }
-} 
+}

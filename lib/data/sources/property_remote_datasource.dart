@@ -220,10 +220,14 @@ class PropertyRemoteDatasource {
               allProps
                   .where((property) {
                     final desc = property['descripcion'];
-                    final sectorId = property['sector']?['id'];
+                    final sector = property['sector'];
+                    final sectorId = sector?['id'];
+                    final inmobiliaria = sector?['realState']?['name'];
                     final u = property['ubicacion'];
                     final lat = u?['latitud'];
                     final lng = u?['longitud'];
+                    final modalidad = property['modality']?['name'];
+                    final categoria = property['category']?['name'];
 
                     final hasUbicacion =
                         u != null && lat != null && lng != null;
@@ -231,7 +235,7 @@ class PropertyRemoteDatasource {
                     final shouldInclude = hasUbicacion && isFromValidSector;
 
                     debugPrint(
-                      '➡ Eval: "$desc" | sectorId: $sectorId | lat: $lat | lng: $lng | include: $shouldInclude',
+                      '➡ Eval: "$desc" | sectorId: $sectorId | inmobiliaria: $inmobiliaria | lat: $lat | lng: $lng | modalidad: $modalidad | categoria: $categoria | include: $shouldInclude',
                     );
 
                     if (shouldInclude) countWithUbicacion++;
@@ -243,6 +247,7 @@ class PropertyRemoteDatasource {
           debugPrint(
             '✅ Propiedades con ubicación válidas: $countWithUbicacion',
           );
+
           return filtered;
         } else {
           throw Exception(
