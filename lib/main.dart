@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:inmobiliaria_app/core/configs/theme/app_theme.dart';
-import 'package:inmobiliaria_app/data/sources/property_remote_datasource.dart';
 import 'package:inmobiliaria_app/presentation/auth/bloc/auth_bloc.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
 import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:inmobiliaria_app/presentation/splash/pages/splash.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'service_locator.dart';
 
 Future<void> main() async {
@@ -23,21 +23,23 @@ Future<void> main() async {
       debugPrint("Error cargando .envExample: $e");
     }
   }
-  
+
   setupLocator();
 
   runApp(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
-        BlocProvider<RealStateBloc>(
-          create:
-              (_) =>
-                  RealStateBloc(RealStateRemoteDatasource())
-                    ..add(LoadRealStates()),
-        ),
-      ],
-      child: const MyApp(),
+    ProviderScope(
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
+          BlocProvider<RealStateBloc>(
+            create:
+                (_) =>
+                    RealStateBloc(RealStateRemoteDatasource())
+                      ..add(LoadRealStates()),
+          ),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/presentation/maps/widgets/map_filter_sheet.dart';
+import 'package:flutter_map_cache/flutter_map_cache.dart';
+import 'package:inmobiliaria_app/presentation/maps/providers/tile_cache_provider.dart';
 
 class MapWidget extends StatefulWidget {
   final List<Property> properties;
@@ -180,36 +183,6 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final propertyMarkers =
-        filteredProperties
-            .where(
-              (p) =>
-                  p.ubicacion?['latitud'] != null &&
-                  p.ubicacion?['longitud'] != null,
-            )
-            .map(
-              (p) => Marker(
-                key: ValueKey(p.id),
-                width: 40,
-                height: 40,
-                point: LatLng(
-                  double.parse(p.ubicacion!['latitud']),
-                  double.parse(p.ubicacion!['longitud']),
-                ),
-                child: Image.asset(
-                  _getIconForProperty(p), // <- ya definido
-                  width: 24,
-                  height: 24,
-                ),
-              ),
-            )
-            .toList();
-
-    final propertyMap = {
-      for (var p in filteredProperties)
-        if (p.ubicacion?['latitud'] != null) p.id: p,
-    };
-
     return Stack(
       children: [
         FlutterMap(
@@ -220,9 +193,25 @@ class _MapWidgetState extends State<MapWidget> {
             onTap: (_, __) => _popupController.hideAllPopups(),
           ),
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.app',
+            Consumer(
+              builder: (context, ref, _) {
+                final asyncStore = ref.watch(tileCacheProvider);
+                return asyncStore.when(
+                  data: (store) {
+                    return TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      tileProvider: CachedTileProvider(
+                        store: store, // Este sí es válido
+                        maxStale: const Duration(days: 365),
+                      ),
+                      userAgentPackageName: 'com.example.app',
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (err, _) => Center(child: Text('Error: $err')),
+                );
+              },
             ),
             if (userLocation != null && maxDistanceKm != null)
               CircleLayer(
