@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_vectors.dart';
 import 'package:inmobiliaria_app/presentation/intro/pages/get_started.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // La clase `SplashPage` representa una pantalla de carga inicial (splash screen)
 // que se muestra al iniciar la aplicación. Es un widget con estado (`StatefulWidget`)
@@ -21,6 +22,7 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
   @override
   void initState() {
     super.initState();
@@ -43,8 +45,7 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> redirect() async {
     await Future.delayed(const Duration(seconds: 2));
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureStorage.read(key: 'jwt');
 
     if (!mounted) return;
 
