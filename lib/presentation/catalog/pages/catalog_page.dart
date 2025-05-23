@@ -556,10 +556,15 @@ class _CatalogPageState extends State<CatalogPage> {
                             itemCount: displayProperties.length,
                             itemBuilder: (context, index) {
                               final property = displayProperties[index];
-                              // Usar imagen local de assets en lugar de red
-                              final String imagePath = _getAssetImage(index);
 
-                              // Extraer información de ubicación
+                              // Obtener imagen desde el JSON (primera disponible)
+                              final String? imageUrl =
+                                  property.imagenes != null &&
+                                          property.imagenes!.isNotEmpty
+                                      ? property.imagenes!.first
+                                      : null;
+
+                              // Extraer ubicación
                               final location =
                                   property.ubicacion?['direccion'] ??
                                   'Sin ubicación';
@@ -568,9 +573,11 @@ class _CatalogPageState extends State<CatalogPage> {
                                 title: property.descripcion,
                                 rating: '${property.precio}€',
                                 location: location.toString(),
-                                path: imagePath,
+                                path:
+                                    imageUrl ??
+                                    'assets/images/default_property.jpg', // imagen fallback
                                 isHeart: false,
-                                isNetworkImage: false,
+                                isNetworkImage: imageUrl != null,
                                 property: property,
                                 realStateName: widget.realStateName,
                               );

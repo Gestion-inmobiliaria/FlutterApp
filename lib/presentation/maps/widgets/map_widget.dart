@@ -349,14 +349,21 @@ class _MapWidgetState extends State<MapWidget> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      _getImageForProperty(selectedProperty!),
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    child:
+                        selectedProperty!.imagenes!.isNotEmpty
+                            ? Image.network(
+                              selectedProperty!.imagenes!.first,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                            : Image.asset(
+                              'assets/images/default_property.jpg',
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                   ),
-
                   const SizedBox(height: 8),
                   Text(
                     selectedProperty!.descripcion,
@@ -408,16 +415,7 @@ class _MapWidgetState extends State<MapWidget> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          /*  // 🔁 Aquí navega a tu pantalla
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => TuPantallaDetalle(
-                                    property: selectedProperty!,
-                                  ),
-                            ),
-                          );*/
+                          // Agrega aquí tu navegación a detalle
                         },
                         child: const Text("Ver detalles"),
                       ),

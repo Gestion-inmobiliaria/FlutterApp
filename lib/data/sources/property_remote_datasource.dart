@@ -135,6 +135,7 @@ class PropertyRemoteDatasource {
 
             if (propertiesResponse.statusCode == 200) {
               final propertiesData = jsonDecode(propertiesResponse.body);
+
               final sectorProperties =
                   (propertiesData['data'] as List)
                       .where(
@@ -154,7 +155,7 @@ class PropertyRemoteDatasource {
           }
         }
 
-        debugPrint('Total propiedades encontradas: ${allProperties.length}');
+        debugPrint('Total propiedades encontradas: $allProperties');
         return allProperties;
       } else if (sectorsResponse.statusCode == 401) {
         // No estamos autorizados, error que será manejado por el Bloc
