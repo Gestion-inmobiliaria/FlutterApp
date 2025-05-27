@@ -121,7 +121,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               : () {
                                 if (_formKey.currentState!.validate()) {
                                   final user = UserEntity(
-                                    ci: int.parse(ciController.text),
+                                    id: '', // Asignar un id temporal vacío, se generará en el backend
+                                    ci: ciController.text,
                                     name: nameController.text,
                                     email: emailController.text,
                                     password: passwordController.text,

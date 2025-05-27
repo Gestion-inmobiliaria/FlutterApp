@@ -27,7 +27,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       try {
         await registerUser(event.user);
-        final token = await loginUser(event.user.email, event.user.password);
+        final password = event.user.password ?? '';
+        final token = await loginUser(event.user.email, password);
         await secureStorage.write(key: 'jwt', value: token); // 🔐 Guardar token
         emit(AuthSuccess(token));
       } catch (e) {

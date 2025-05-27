@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
 
 class PropertyRemoteDatasource {
   final baseUrl = dotenv.env['URL_BACKEND'];
@@ -293,6 +294,68 @@ class PropertyRemoteDatasource {
     } catch (e) {
       debugPrint('Exception en fetchPropertyDetail: $e');
       throw Exception('Error al obtener detalle de propiedad: $e');
+    }
+  }
+
+  // Obtener una propiedad por su ID
+  Future<Property> fetchPropertyById(String propertyId) async {
+    try {
+      final headers = await _getHeaders();
+      debugPrint(
+        'Obteniendo propiedad por ID: $propertyId - URL: $baseUrl/api/property/$propertyId',
+      );
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/property/$propertyId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Property.fromJson(data['data']);
+      } else if (response.statusCode == 401) {
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
+      } else {
+        debugPrint(
+          'Error fetchPropertyById: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception('Error al cargar propiedad (${response.statusCode})');
+      }
+    } catch (e) {
+      debugPrint('Exception en fetchPropertyById: $e');
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  // Obtener el agente asignado a una propiedad
+  Future<UserEntity> fetchPropertyAgent(String propertyId) async {
+    try {
+      final headers = await _getHeaders();
+      debugPrint(
+        'Obteniendo agente de propiedad: $propertyId - URL: $baseUrl/api/property/$propertyId/agent',
+      );
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/property/$propertyId/agent'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return UserEntity.fromJson(data['data']);
+      } else if (response.statusCode == 401) {
+        throw Exception(
+          'No autorizado (401): Las credenciales no son válidas o han expirado',
+        );
+      } else {
+        debugPrint(
+          'Error fetchPropertyAgent: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception('Error al cargar agente (${response.statusCode})');
+      }
+    } catch (e) {
+      debugPrint('Exception en fetchPropertyAgent: $e');
+      throw Exception('Error de conexión: $e');
     }
   }
 }
