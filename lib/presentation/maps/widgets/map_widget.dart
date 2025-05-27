@@ -8,6 +8,7 @@ import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/presentation/maps/widgets/map_filter_sheet.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
 import 'package:inmobiliaria_app/presentation/maps/providers/tile_cache_provider.dart';
+import 'package:inmobiliaria_app/presentation/catalog/pages/property_detail_page.dart';
 
 class MapWidget extends StatefulWidget {
   final List<Property> properties;
@@ -415,7 +416,29 @@ class _MapWidgetState extends State<MapWidget> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Agrega aquí tu navegación a detalle
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => PropertyDetailPage(
+                                    property: selectedProperty!,
+                                    imagePath:
+                                        selectedProperty!
+                                                    .imagenes
+                                                    ?.isNotEmpty ==
+                                                true
+                                            ? selectedProperty!.imagenes!.first
+                                            : 'assets/images/default_property.jpg',
+                                    isNetworkImage:
+                                        selectedProperty!
+                                            .imagenes
+                                            ?.isNotEmpty ==
+                                        true,
+                                    realStateName:
+                                        selectedProperty!.inmobiliaria ?? '',
+                                  ),
+                            ),
+                          );
                         },
                         child: const Text("Ver detalles"),
                       ),
