@@ -17,6 +17,17 @@ class ExploreCard extends StatelessWidget {
   final Property? property;
   final String realStateName;
   
+  // Lista de imágenes disponibles en assets para usar como fallback
+  static const List<String> _assetImages = [
+    'assets/images/property.jpg',
+    'assets/images/property1.jpg',
+    'assets/images/property2.jpg',
+    'assets/images/product1.png',
+    'assets/images/product2.png',
+    'assets/images/product3.png',
+    'assets/images/product4.png',
+  ];
+  
   const ExploreCard({
     Key? key,
     required this.location,
@@ -28,6 +39,13 @@ class ExploreCard extends StatelessWidget {
     this.property,
     this.realStateName = '',
   }) : super(key: key);
+
+  // Obtener una imagen de los assets basada en el hash del título
+  String _getFallbackImage() {
+    // Usar el hash del título para seleccionar una imagen consistente para la misma propiedad
+    final int hashCode = title.hashCode.abs();
+    return _assetImages[hashCode % _assetImages.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,12 +97,30 @@ class ExploreCard extends StatelessWidget {
                               width: double.infinity,
                               height: double.infinity,
                               image: NetworkImage(path),
+                              errorBuilder: (context, error, stackTrace) {
+                                // Si hay error al cargar la imagen de red, usar una imagen de assets
+                                return Image.asset(
+                                  _getFallbackImage(),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                );
+                              },
                             )
                           : Image.asset(
                               path,
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Si hay error al cargar la imagen de assets, usar otra imagen de assets
+                                return Image.asset(
+                                  _assetImages[0], // Usar la primera imagen como última opción
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                );
+                              },
                             ),
                     ),
                   ),

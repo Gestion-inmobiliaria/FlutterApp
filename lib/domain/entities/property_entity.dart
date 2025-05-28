@@ -13,6 +13,7 @@ class Property {
   final String? inmobiliaria;
   final List<String>? imagenes;
   final Map<String, dynamic>? ubicacion;
+  final Map<String, dynamic>? user;
 
   Property({
     required this.id,
@@ -29,6 +30,7 @@ class Property {
     this.inmobiliaria,
     this.imagenes,
     this.ubicacion,
+    this.user,
   });
 
   factory Property.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class Property {
               ? List<String>.from(json['imagenes'].map((img) => img['url']))
               : [],
       ubicacion: json['ubicacion'],
+      user: json['user'],
     );
   }
 }

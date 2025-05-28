@@ -358,7 +358,7 @@ class _MapWidgetState extends State<MapWidget> {
                               fit: BoxFit.cover,
                             )
                             : Image.asset(
-                              'assets/images/default_property.jpg',
+                              'assets/images/property.jpg',
                               height: 150,
                               width: double.infinity,
                               fit: BoxFit.cover,

@@ -575,7 +575,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                 location: location.toString(),
                                 path:
                                     imageUrl ??
-                                    'assets/images/default_property.jpg', // imagen fallback
+                                    _getAssetImage(index), // Usar una imagen de los assets como fallback
                                 isHeart: false,
                                 isNetworkImage: imageUrl != null,
                                 property: property,
