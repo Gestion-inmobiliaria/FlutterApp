@@ -117,7 +117,12 @@ class _MapWidgetState extends State<MapWidget> {
     });
   }
 
-  final List<String> availableFilters = ['Zona Norte', 'Zona Centro'];
+  final List<String> availableFilters = [
+    'Zona Norte',
+    'Zona Centro',
+    'Zona UV-1',
+    'Zona Villa-1ro',
+  ];
   final Set<String> selectedFilters = {}; // Controla los filtros seleccionados
 
   void onFilterToggled(String filter) {
@@ -251,6 +256,29 @@ class _MapWidgetState extends State<MapWidget> {
                   ),
                 ],
               ),
+            if (selectedFilters.contains('Zona UV-1'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaUV1Points,
+                    color: Colors.orange.withOpacity(0.2),
+                    borderColor: Colors.orange,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+            if (selectedFilters.contains('Zona Villa-1ro'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaVilla1roPoints,
+                    color: Colors.purple.withOpacity(0.2),
+                    borderColor: Colors.purple,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+
             if (userLocation != null && maxDistanceKm != null)
               CircleLayer(
                 circles: [
@@ -294,7 +322,20 @@ class _MapWidgetState extends State<MapWidget> {
                               )) {
                             return true;
                           }
-                          // Puedes añadir más zonas aquí (Zona Sur, etc.)
+                          if (filter == 'Zona UV-1' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaUV1Points,
+                              )) {
+                            return true;
+                          }
+                          if (filter == 'Zona Villa-1ro' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaVilla1roPoints,
+                              )) {
+                            return true;
+                          }
                         }
 
                         return false; // Si no coincide con ningún filtro, no se muestra
@@ -513,6 +554,11 @@ class _MapWidgetState extends State<MapWidget> {
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.green, // Cambiar a tu color deseado
+                          foregroundColor: Colors.white, // Color del texto
+                        ),
                         child: const Text("Ver detalles"),
                       ),
                     ],
