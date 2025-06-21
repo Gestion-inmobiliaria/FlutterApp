@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/login_page.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/sign_up_page.dart';
 
@@ -36,7 +37,10 @@ class AuthButtons extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (BuildContext context) => const LoginPage(),
+                  builder:
+                      (_) => Consumer(
+                        builder: (context, ref, _) => LoginPage(ref: ref),
+                      ),
                 ),
               );
             },

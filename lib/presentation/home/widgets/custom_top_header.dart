@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/login_page.dart';
 import 'package:inmobiliaria_app/presentation/profile/pages/profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,7 +74,12 @@ class CustomTopHeader extends StatelessWidget {
 
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    MaterialPageRoute(
+                      builder:
+                          (_) => Consumer(
+                            builder: (context, ref, _) => LoginPage(ref: ref),
+                          ),
+                    ),
                     (route) => false,
                   );
                 }
