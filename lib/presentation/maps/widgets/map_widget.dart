@@ -8,6 +8,9 @@ import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/presentation/maps/widgets/map_filter_sheet.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
 import 'package:inmobiliaria_app/presentation/maps/providers/tile_cache_provider.dart';
+import 'package:inmobiliaria_app/presentation/catalog/pages/property_detail_page.dart';
+import 'package:inmobiliaria_app/presentation/maps/widgets/map_zones.dart';
+import 'package:inmobiliaria_app/presentation/maps/widgets/filters_horizontal.dart';
 
 class MapWidget extends StatefulWidget {
   final List<Property> properties;
@@ -114,6 +117,24 @@ class _MapWidgetState extends State<MapWidget> {
     });
   }
 
+  final List<String> availableFilters = [
+    'Zona Norte',
+    'Zona Centro',
+    'Zona UV-1',
+    'Zona Villa-1ro',
+  ];
+  final Set<String> selectedFilters = {}; // Controla los filtros seleccionados
+
+  void onFilterToggled(String filter) {
+    setState(() {
+      if (selectedFilters.contains(filter)) {
+        selectedFilters.remove(filter);
+      } else {
+        selectedFilters.add(filter);
+      }
+    });
+  }
+
   Future<void> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
@@ -213,6 +234,51 @@ class _MapWidgetState extends State<MapWidget> {
                 );
               },
             ),
+            if (selectedFilters.contains('Zona Norte'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaNortePoints,
+                    color: Colors.blue.withOpacity(0.2),
+                    borderColor: Colors.blue,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+            if (selectedFilters.contains('Zona Centro'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaCentroPoints,
+                    color: Colors.green.withOpacity(0.2),
+                    borderColor: Colors.green,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+            if (selectedFilters.contains('Zona UV-1'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaUV1Points,
+                    color: Colors.orange.withOpacity(0.2),
+                    borderColor: Colors.orange,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+            if (selectedFilters.contains('Zona Villa-1ro'))
+              PolygonLayer(
+                polygons: [
+                  Polygon(
+                    points: MapZones.zonaVilla1roPoints,
+                    color: Colors.purple.withOpacity(0.2),
+                    borderColor: Colors.purple,
+                    borderStrokeWidth: 3,
+                  ),
+                ],
+              ),
+
             if (userLocation != null && maxDistanceKm != null)
               CircleLayer(
                 circles: [
@@ -226,17 +292,56 @@ class _MapWidgetState extends State<MapWidget> {
                   ),
                 ],
               ),
+            // Mostrar propiedades filtradas dentro del polígono (opcional)
             MarkerLayer(
               markers:
                   filteredProperties
-                      .where(
-                        (p) =>
-                            p.ubicacion?['latitud'] != null &&
-                            p.ubicacion?['longitud'] != null,
-                      )
+                      .where((p) {
+                        final u = p.ubicacion;
+                        final lat = double.tryParse(u?['latitud'] ?? '');
+                        final lng = double.tryParse(u?['longitud'] ?? '');
+                        if (lat == null || lng == null) return false;
+
+                        // Si no hay filtros seleccionados, mostrar todos
+                        if (selectedFilters.isEmpty) return true;
+
+                        // Si se seleccionó una zona, verificar si el punto está dentro
+                        final point = LatLng(lat, lng);
+                        for (final filter in selectedFilters) {
+                          if (filter == 'Zona Norte' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaNortePoints,
+                              )) {
+                            return true;
+                          }
+                          if (filter == 'Zona Centro' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaCentroPoints,
+                              )) {
+                            return true;
+                          }
+                          if (filter == 'Zona UV-1' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaUV1Points,
+                              )) {
+                            return true;
+                          }
+                          if (filter == 'Zona Villa-1ro' &&
+                              MapZones.isPointInPolygon(
+                                point,
+                                MapZones.zonaVilla1roPoints,
+                              )) {
+                            return true;
+                          }
+                        }
+
+                        return false; // Si no coincide con ningún filtro, no se muestra
+                      })
                       .map(
                         (p) => Marker(
-                          key: ValueKey(p.id),
                           width: 40,
                           height: 40,
                           point: LatLng(
@@ -246,9 +351,7 @@ class _MapWidgetState extends State<MapWidget> {
                           child: GestureDetector(
                             onTap: () => setState(() => selectedProperty = p),
                             child: Image.asset(
-                              _getIconForProperty(
-                                p,
-                              ), // ← ícono por inmobiliaria
+                              _getIconForProperty(p),
                               width: 24,
                               height: 24,
                             ),
@@ -276,8 +379,20 @@ class _MapWidgetState extends State<MapWidget> {
           ],
         ),
 
+        // Filtros horizontales en la parte superior
         Positioned(
           top: 16,
+          left: 0,
+          right: 0,
+          child: FiltersHorizontal(
+            filters: availableFilters,
+            selected: selectedFilters,
+            onToggle: onFilterToggled,
+          ),
+        ),
+
+        Positioned(
+          bottom: 16,
           left: 16,
           child: ElevatedButton.icon(
             onPressed: _showFilterSheet,
@@ -415,8 +530,35 @@ class _MapWidgetState extends State<MapWidget> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Agrega aquí tu navegación a detalle
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => PropertyDetailPage(
+                                    property: selectedProperty!,
+                                    imagePath:
+                                        selectedProperty!
+                                                    .imagenes
+                                                    ?.isNotEmpty ==
+                                                true
+                                            ? selectedProperty!.imagenes!.first
+                                            : 'assets/images/default_property.jpg',
+                                    isNetworkImage:
+                                        selectedProperty!
+                                            .imagenes
+                                            ?.isNotEmpty ==
+                                        true,
+                                    realStateName:
+                                        selectedProperty!.inmobiliaria ?? '',
+                                  ),
+                            ),
+                          );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.green, // Cambiar a tu color deseado
+                          foregroundColor: Colors.white, // Color del texto
+                        ),
                         child: const Text("Ver detalles"),
                       ),
                     ],
