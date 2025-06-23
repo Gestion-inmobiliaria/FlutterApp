@@ -7,6 +7,7 @@ import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
 import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:inmobiliaria_app/presentation/splash/pages/splash.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'service_locator.dart';
 
@@ -37,6 +38,7 @@ Future<void> main() async {
                     RealStateBloc(RealStateRemoteDatasource())
                       ..add(LoadRealStates()),
           ),
+          BlocProvider<FavoriteBloc>(create: (_) => sl<FavoriteBloc>()),
         ],
         child: const MyApp(),
       ),

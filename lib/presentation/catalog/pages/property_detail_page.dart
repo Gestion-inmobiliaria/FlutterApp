@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -10,6 +11,8 @@ import 'package:inmobiliaria_app/domain/providers/property_provider.dart';
 import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
+import 'package:inmobiliaria_app/service_locator.dart';
 // import 'package:permission_handler/permission_handler.dart';
 
 class PropertyDetailPage extends ConsumerStatefulWidget {
@@ -49,6 +52,18 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
   void initState() {
     super.initState();
     _loadPropertyLocation();
+
+    // Verificar el estado inicial de favorito después de que el widget esté construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          final favoriteBloc = context.read<FavoriteBloc>();
+          favoriteBloc.add(CheckFavoriteStatus(widget.property.id));
+        } catch (e) {
+          debugPrint('Error accessing FavoriteBloc: $e');
+        }
+      }
+    });
   }
 
   void _loadPropertyLocation() {
@@ -84,6 +99,26 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     return _assetImages[hashCode % _assetImages.length];
   }
 
+  void _toggleFavorite() {
+    try {
+      final favoriteBloc = context.read<FavoriteBloc>();
+      final currentState = favoriteBloc.state;
+      bool isCurrentlyFavorite = false;
+
+      if (currentState is FavoriteLoaded) {
+        isCurrentlyFavorite =
+            currentState.favoriteStatus[widget.property.id] ?? false;
+      }
+
+      favoriteBloc.add(ToggleFavorite(widget.property.id, isCurrentlyFavorite));
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al actualizar favoritos')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,29 +138,30 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                     SizedBox(
                       height: 300,
                       width: double.infinity,
-                      child: widget.isNetworkImage
-                          ? Image.network(
-                              widget.imagePath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Si hay error al cargar la imagen de red, usar una imagen de assets
-                                return Image.asset(
-                                  _getFallbackImage(),
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              widget.imagePath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Si hay error al cargar la imagen de assets, usar otra imagen de assets
-                                return Image.asset(
-                                  _assetImages[0], // Usar la primera imagen como última opción
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            ),
+                      child:
+                          widget.isNetworkImage
+                              ? Image.network(
+                                widget.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Si hay error al cargar la imagen de red, usar una imagen de assets
+                                  return Image.asset(
+                                    _getFallbackImage(),
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              )
+                              : Image.asset(
+                                widget.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Si hay error al cargar la imagen de assets, usar otra imagen de assets
+                                  return Image.asset(
+                                    _assetImages[0], // Usar la primera imagen como última opción
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              ),
                     ),
                     // Gradiente para mejorar la visibilidad de los botones
                     Container(
@@ -156,25 +192,61 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                 ),
               ),
               actions: [
-                // Botón de favoritos
-                Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.favorite_border, color: Colors.red),
-                    onPressed: () {
-                      // Implementar funcionalidad de favoritos
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Añadido a favoritos'),
-                          duration: Duration(seconds: 1),
+                // Botón de favoritos - solo mostrar si hay FavoriteBloc disponible
+                Builder(
+                  builder: (context) {
+                    try {
+                      context.read<FavoriteBloc>();
+                      
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                          builder: (context, state) {
+                            bool isFavorite = false;
+
+                            if (state is FavoriteLoaded) {
+                              isFavorite =
+                                  state.favoriteStatus[widget.property.id] ?? false;
+                            }
+
+                            return IconButton(
+                              icon: Icon(
+                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: Colors.red,
+                              ),
+                              onPressed: _toggleFavorite,
+                            );
+                          },
                         ),
                       );
-                    },
-                  ),
+                    } catch (e) {
+                      // Si no hay FavoriteBloc disponible, mostrar botón deshabilitado
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.favorite_border,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Favoritos no disponibles'),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }
+                  },
                 ),
               ],
             ),
@@ -253,9 +325,10 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: widget.property.estado == 'disponible'
-                                    ? Colors.green.shade100
-                                    : Colors.amber.shade100,
+                                color:
+                                    widget.property.estado == 'disponible'
+                                        ? Colors.green.shade100
+                                        : Colors.amber.shade100,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -263,9 +336,10 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: widget.property.estado == 'disponible'
-                                      ? Colors.green.shade800
-                                      : Colors.amber.shade800,
+                                  color:
+                                      widget.property.estado == 'disponible'
+                                          ? Colors.green.shade800
+                                          : Colors.amber.shade800,
                                 ),
                               ),
                             ),
@@ -319,30 +393,32 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                       child: Container(
                         height: 200,
                         width: double.infinity,
-                        child: _propertyLocation != null
-                            ? _buildMap()
-                            : Container(
-                                color: Colors.grey.shade300,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.location_off,
-                                        size: 50,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                      const Text(
-                                        'Ubicación no disponible',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontWeight: FontWeight.bold,
+                        child:
+                            _propertyLocation != null
+                                ? _buildMap()
+                                : Container(
+                                  color: Colors.grey.shade300,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.location_off,
+                                          size: 50,
+                                          color: Colors.grey.shade600,
                                         ),
-                                      ),
-                                    ],
+                                        const Text(
+                                          'Ubicación no disponible',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
                       ),
                     ),
 
@@ -402,21 +478,23 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Información del agente
                     Consumer(
                       builder: (context, ref, child) {
-                        final agentAsync = ref.watch(propertyAgentProvider(widget.property.id));
-                        
+                        final agentAsync = ref.watch(
+                          propertyAgentProvider(widget.property.id),
+                        );
+
                         return agentAsync.when(
                           data: (agent) {
                             // Determinar la imagen de perfil según el género
                             String profileImage = 'assets/images/profile.png';
-                            if (agent.gender?.toLowerCase() == 'femenino' || 
+                            if (agent.gender?.toLowerCase() == 'femenino' ||
                                 agent.gender?.toLowerCase() == 'female') {
                               profileImage = 'assets/images/profile1.png';
                             }
-                            
+
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -431,7 +509,8 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             agent.name,
@@ -462,9 +541,9 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                     ),
                                   ],
                                 ),
-                                
+
                                 const SizedBox(height: 16),
-                                
+
                                 // Botón de WhatsApp
                                 if (agent.phone != null)
                                   Container(
@@ -472,11 +551,19 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                     decoration: BoxDecoration(
                                       color: Colors.green.shade50,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.green.shade200),
+                                      border: Border.all(
+                                        color: Colors.green.shade200,
+                                      ),
                                     ),
-                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     child: ListTile(
-                                      leading: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 24),
+                                      leading: const FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        color: Colors.green,
+                                        size: 24,
+                                      ),
                                       title: const Text(
                                         'Contactar por WhatsApp',
                                         style: TextStyle(
@@ -489,22 +576,38 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                         style: TextStyle(color: Colors.black87),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 16),
-                                      onTap: () => _showCustomMessageDialog(agent.phone!, widget.property.descripcion),
+                                      trailing: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: Colors.green,
+                                        size: 16,
+                                      ),
+                                      onTap:
+                                          () => _showCustomMessageDialog(
+                                            agent.phone!,
+                                            widget.property.descripcion,
+                                          ),
                                     ),
                                   ),
-                                
+
                                 // Botón de correo electrónico
                                 Container(
                                   width: double.infinity,
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border: Border.all(
+                                      color: Colors.blue.shade200,
+                                    ),
                                   ),
-                                  margin: const EdgeInsets.symmetric(vertical: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   child: ListTile(
-                                    leading: const Icon(Icons.email, color: Colors.blue, size: 24),
+                                    leading: const Icon(
+                                      Icons.email,
+                                      color: Colors.blue,
+                                      size: 24,
+                                    ),
                                     title: const Text(
                                       'Enviar correo electrónico',
                                       style: TextStyle(
@@ -518,11 +621,15 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                       style: TextStyle(color: Colors.black87),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.blue, size: 16),
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.blue,
+                                      size: 16,
+                                    ),
                                     onTap: () => _launchEmail(agent.email),
                                   ),
                                 ),
-                                
+
                                 // Botón de llamada
                                 if (agent.phone != null)
                                   Container(
@@ -530,11 +637,19 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                     decoration: BoxDecoration(
                                       color: Colors.orange.shade50,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.orange.shade200),
+                                      border: Border.all(
+                                        color: Colors.orange.shade200,
+                                      ),
                                     ),
-                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     child: ListTile(
-                                      leading: const Icon(Icons.phone, color: Colors.orange, size: 24),
+                                      leading: const Icon(
+                                        Icons.phone,
+                                        color: Colors.orange,
+                                        size: 24,
+                                      ),
                                       title: const Text(
                                         'Llamar por teléfono',
                                         style: TextStyle(
@@ -545,34 +660,44 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                                       ),
                                       subtitle: Text(
                                         agent.phone!,
-                                        style: const TextStyle(color: Colors.black87),
+                                        style: const TextStyle(
+                                          color: Colors.black87,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
+                                      trailing: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: Colors.orange,
+                                        size: 16,
+                                      ),
                                       onTap: () => _launchPhone(agent.phone!),
                                     ),
                                   ),
                               ],
                             );
                           },
-                          loading: () => const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
-                          error: (error, stackTrace) => Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Text(
-                                'No se pudo cargar la información del agente',
-                                style: TextStyle(color: Colors.red.shade800),
+                          loading:
+                              () => const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: CircularProgressIndicator(),
+                                ),
                               ),
-                            ),
-                          ),
+                          error:
+                              (error, stackTrace) => Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Text(
+                                    'No se pudo cargar la información del agente',
+                                    style: TextStyle(
+                                      color: Colors.red.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ),
                         );
                       },
-                      ),
+                    ),
 
                     // const SizedBox(height: 50),
                   ],
@@ -582,36 +707,6 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
           ],
         ),
       ),
-      // Botón flotante para contactar por WhatsApp
-      // floatingActionButton: Consumer(
-      //   builder: (context, ref, child) {
-      //     final agentAsync = ref.watch(propertyAgentProvider(widget.property.id));
-          
-      //     return agentAsync.when(
-      //       data: (agent) {
-      //         if (agent.phone == null) {
-      //           return const SizedBox.shrink(); // No mostrar botón si no hay teléfono
-      //         }
-              
-      //         return Container(
-      //   width: double.infinity,
-      //   margin: const EdgeInsets.symmetric(horizontal: 16),
-      //   child: FloatingActionButton.extended(
-      //             backgroundColor: Colors.green,
-      //     onPressed: () {
-      //               _showCustomMessageDialog(agent.phone!, widget.property.descripcion);
-      //             },
-      //             icon: const FaIcon(FontAwesomeIcons.whatsapp),
-      //             label: const Text('Contactar por WhatsApp'),
-      //           ),
-      //         );
-      //       },
-      //       loading: () => const SizedBox.shrink(),
-      //       error: (_, __) => const SizedBox.shrink(),
-      //     );
-      //   },
-      // ),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -635,34 +730,48 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
       builder: (context, scrollController) {
         return Consumer(
           builder: (context, ref, child) {
-            final agentAsync = ref.watch(propertyAgentProvider(widget.property.id));
-            
+            final agentAsync = ref.watch(
+              propertyAgentProvider(widget.property.id),
+            );
+
             return agentAsync.when(
-              data: (agent) => _buildAgentInfo(context, agent, scrollController),
+              data:
+                  (agent) => _buildAgentInfo(context, agent, scrollController),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No se pudo cargar la información del agente',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey.shade800),
+              error:
+                  (error, stackTrace) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No se pudo cargar la información del agente',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            error.toString(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        error.toString(),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
             );
           },
         );
@@ -670,10 +779,15 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     );
   }
 
-  Widget _buildAgentInfo(BuildContext context, UserEntity agent, ScrollController scrollController) {
+  Widget _buildAgentInfo(
+    BuildContext context,
+    UserEntity agent,
+    ScrollController scrollController,
+  ) {
     // Determinar la imagen de perfil según el género
     String profileImage = 'assets/images/profile.png'; // Por defecto masculino
-    if (agent.gender?.toLowerCase() == 'femenino' || agent.gender?.toLowerCase() == 'female') {
+    if (agent.gender?.toLowerCase() == 'femenino' ||
+        agent.gender?.toLowerCase() == 'female') {
       profileImage = 'assets/images/profile1.png';
     }
 
@@ -694,18 +808,15 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Título
           const Text(
             'Información del Agente',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          
+
           // Foto de perfil
           Center(
             child: CircleAvatar(
@@ -714,18 +825,15 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Nombre del agente
           Text(
             agent.name,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          
+
           // Correo electrónico
           ListTile(
             leading: const Icon(Icons.email, color: AppColors.primaryColor),
@@ -733,7 +841,7 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
             subtitle: Text(agent.email),
             onTap: () => _launchEmail(agent.email),
           ),
-          
+
           // Teléfono
           if (agent.phone != null)
             ListTile(
@@ -742,7 +850,7 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
               subtitle: Text(agent.phone!),
               onTap: () => _launchPhone(agent.phone!),
             ),
-          
+
           // WhatsApp
           if (agent.phone != null)
             Column(
@@ -756,7 +864,11 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                   ),
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   child: ListTile(
-                    leading: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 28),
+                    leading: const FaIcon(
+                      FontAwesomeIcons.whatsapp,
+                      color: Colors.green,
+                      size: 28,
+                    ),
                     title: const Text(
                       'Contactar por WhatsApp',
                       style: TextStyle(
@@ -768,23 +880,33 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                       'Enviar mensaje con detalles de la propiedad',
                       style: TextStyle(color: Colors.black87),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.green),
-                    onTap: () => _showCustomMessageDialog(agent.phone!, widget.property.descripcion),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.green,
+                    ),
+                    onTap:
+                        () => _showCustomMessageDialog(
+                          agent.phone!,
+                          widget.property.descripcion,
+                        ),
                   ),
                 ),
               ],
             ),
-          
+
           // Dirección
           if (agent.address != null)
             ListTile(
-              leading: const Icon(Icons.location_on, color: AppColors.primaryColor),
+              leading: const Icon(
+                Icons.location_on,
+                color: AppColors.primaryColor,
+              ),
               title: const Text('Dirección'),
               subtitle: Text(agent.address!),
             ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Botón de cerrar
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -806,9 +928,10 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: email,
-      query: 'subject=Consulta sobre propiedad ${widget.property.id}&body=Hola, estoy interesado/a en obtener más información sobre la propiedad con ID: ${widget.property.id}.\n\nDetalles de la propiedad:\nPrecio: ${widget.property.precio.toStringAsFixed(0)}€\nÁrea: ${widget.property.area.toStringAsFixed(0)}m²\nHabitaciones: ${widget.property.nroHabitaciones ?? "No especificado"}\n\nQuedo atento a su respuesta.\n\nSaludos cordiales.',
+      query:
+          'subject=Consulta sobre propiedad ${widget.property.id}&body=Hola, estoy interesado/a en obtener más información sobre la propiedad con ID: ${widget.property.id}.\n\nDetalles de la propiedad:\nPrecio: ${widget.property.precio.toStringAsFixed(0)}€\nÁrea: ${widget.property.area.toStringAsFixed(0)}m²\nHabitaciones: ${widget.property.nroHabitaciones ?? "No especificado"}\n\nQuedo atento a su respuesta.\n\nSaludos cordiales.',
     );
-    
+
     // if (await canLaunchUrl(emailUri)) {
     //   await launchUrl(emailUri);
     // } else {
@@ -833,10 +956,10 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
   void _launchPhone(String phone) async {
     // Limpiar el número de teléfono de caracteres no deseados
     String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    
+
     // Crear la URI con el formato correcto
     final Uri phoneUri = Uri.parse('tel:$cleanPhone');
-    
+
     try {
       debugPrint('Intentando abrir directamente: $phoneUri');
       // En algunos dispositivos (especialmente Xiaomi/MIUI), canLaunchUrl puede fallar
@@ -851,7 +974,8 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
   }
 
   void _showCustomMessageDialog(String phone, String propertyDesc) {
-    final defaultMessage = """Hola, estoy interesado/a en la siguiente propiedad:
+    final defaultMessage =
+        """Hola, estoy interesado/a en la siguiente propiedad:
 
 *${widget.property.descripcion}*
 💰 Precio: ${widget.property.precio.toStringAsFixed(0)}€
@@ -868,103 +992,116 @@ Me gustaría recibir más información. Gracias.""";
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 20),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Contactar por WhatsApp',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        color: Colors.green,
+                        size: 20,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Contactar por WhatsApp',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Puedes personalizar el mensaje:',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: TextField(
+                        controller: messageController,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        style: const TextStyle(fontSize: 13),
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.all(12),
+                          border: InputBorder.none,
+                          hintText: 'Escribe tu mensaje aquí',
+                        ),
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                      label: const Text('Enviar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _launchWhatsAppWithCustomMessage(
+                          phone,
+                          messageController.text,
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Puedes personalizar el mensaje:',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: TextField(
-                    controller: messageController,
-                    maxLines: null,
-                    keyboardType: TextInputType.multiline,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.all(12),
-                      border: InputBorder.none,
-                      hintText: 'Escribe tu mensaje aquí',
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-                  label: const Text('Enviar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _launchWhatsAppWithCustomMessage(phone, messageController.text);
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
-  void _launchWhatsAppWithCustomMessage(String phone, String customMessage) async {
+  void _launchWhatsAppWithCustomMessage(
+    String phone,
+    String customMessage,
+  ) async {
     String formattedPhone = phone;
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+$formattedPhone';
     }
-    
-    final Uri whatsappUri = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(customMessage)}');
-    
+
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/$formattedPhone?text=${Uri.encodeComponent(customMessage)}',
+    );
+
     try {
       debugPrint('Intentando abrir directamente: $whatsappUri');
       // En algunos dispositivos (especialmente Xiaomi/MIUI), canLaunchUrl puede fallar
@@ -972,9 +1109,9 @@ Me gustaría recibir más información. Gracias.""";
       await launchUrl(whatsappUri);
     } catch (e) {
       debugPrint('Error al abrir Whatsapp: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el Whatsapp')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo abrir el Whatsapp')));
     }
 
     // if (await canLaunchUrl(whatsappUri)) {
@@ -993,17 +1130,11 @@ Me gustaría recibir más información. Gracias.""";
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
       ],
     );
@@ -1026,9 +1157,7 @@ Me gustaría recibir más información. Gracias.""";
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -1104,10 +1233,7 @@ Me gustaría recibir más información. Gracias.""";
                 color: Colors.black.withOpacity(0.6),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: Colors.white,
-                    ),
+                    const Icon(Icons.location_on, color: Colors.white),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1146,7 +1272,7 @@ Me gustaría recibir más información. Gracias.""";
 🏘️ Inmobiliaria: ${widget.realStateName}
 
 Me gustaría recibir más información. Gracias.""";
-    
+
     _launchWhatsAppWithCustomMessage(phone, message);
   }
-} 
+}
