@@ -1,1 +1,2 @@
 URL_BACKEND=https://gi-backend.onrender.com
+STRIPE_PUBLISHABLE_KEY=STRIPE_PUBLISHABLE_KEY

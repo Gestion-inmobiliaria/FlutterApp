@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/domain/providers/auth_provider.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
@@ -13,7 +14,8 @@ import 'package:inmobiliaria_app/domain/providers/property_provider.dart';
 import 'package:inmobiliaria_app/domain/entities/user_entity.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
+import 'package:inmobiliaria_app/service_locator.dart';
 // import 'package:permission_handler/permission_handler.dart';
 
 class PropertyDetailPage extends ConsumerStatefulWidget {
@@ -53,6 +55,18 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
   void initState() {
     super.initState();
     _loadPropertyLocation();
+
+    // Verificar el estado inicial de favorito después de que el widget esté construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          final favoriteBloc = context.read<FavoriteBloc>();
+          favoriteBloc.add(CheckFavoriteStatus(widget.property.id));
+        } catch (e) {
+          debugPrint('Error accessing FavoriteBloc: $e');
+        }
+      }
+    });
   }
 
   void _loadPropertyLocation() {
@@ -86,6 +100,26 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     // Usar el hash de la descripción para seleccionar una imagen consistente para la misma propiedad
     final int hashCode = widget.property.descripcion.hashCode.abs();
     return _assetImages[hashCode % _assetImages.length];
+  }
+
+  void _toggleFavorite() {
+    try {
+      final favoriteBloc = context.read<FavoriteBloc>();
+      final currentState = favoriteBloc.state;
+      bool isCurrentlyFavorite = false;
+
+      if (currentState is FavoriteLoaded) {
+        isCurrentlyFavorite =
+            currentState.favoriteStatus[widget.property.id] ?? false;
+      }
+
+      favoriteBloc.add(ToggleFavorite(widget.property.id, isCurrentlyFavorite));
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al actualizar favoritos')),
+      );
+    }
   }
 
   @override
@@ -168,28 +202,61 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                   ),
                   actions: [
                     // Botón de favoritos
-                    Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.favorite_border,
-                          color: Colors.red,
+                Builder(
+                  builder: (context) {
+                    try {
+                      context.read<FavoriteBloc>();
+                      
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
                         ),
-                        onPressed: () {
-                          // Implementar funcionalidad de favoritos
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Añadido a favoritos'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                        child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                          builder: (context, state) {
+                            bool isFavorite = false;
+
+                            if (state is FavoriteLoaded) {
+                              isFavorite =
+                                  state.favoriteStatus[widget.property.id] ?? false;
+                            }
+
+                            return IconButton(
+                              icon: Icon(
+                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: Colors.red,
+                              ),
+                              onPressed: _toggleFavorite,
+                            );
+                          },
+                        ),
+                      );
+                    } catch (e) {
+                      // Si no hay FavoriteBloc disponible, mostrar botón deshabilitado
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.favorite_border,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Favoritos no disponibles'),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }
+                  },
+                ),
                   ],
                 ),
 
@@ -675,36 +742,6 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
               ],
             ),
           ),
-          // Botón flotante para contactar por WhatsApp
-          // floatingActionButton: Consumer(
-          //   builder: (context, ref, child) {
-          //     final agentAsync = ref.watch(propertyAgentProvider(widget.property.id));
-
-          //     return agentAsync.when(
-          //       data: (agent) {
-          //         if (agent.phone == null) {
-          //           return const SizedBox.shrink(); // No mostrar botón si no hay teléfono
-          //         }
-
-          //         return Container(
-          //   width: double.infinity,
-          //   margin: const EdgeInsets.symmetric(horizontal: 16),
-          //   child: FloatingActionButton.extended(
-          //             backgroundColor: Colors.green,
-          //     onPressed: () {
-          //               _showCustomMessageDialog(agent.phone!, widget.property.descripcion);
-          //             },
-          //             icon: const FaIcon(FontAwesomeIcons.whatsapp),
-          //             label: const Text('Contactar por WhatsApp'),
-          //           ),
-          //         );
-          //       },
-          //       loading: () => const SizedBox.shrink(),
-          //       error: (_, __) => const SizedBox.shrink(),
-          //     );
-          //   },
-          // ),
-          // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         );
       },
     );
