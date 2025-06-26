@@ -172,7 +172,7 @@ class PropertyRemoteDatasource {
     } catch (e) {
       debugPrint('Error general en fetchPropertiesByRealState: $e');
       // Propagamos el error para que lo maneje el Bloc
-      throw e;
+      rethrow;
     }
   }
 

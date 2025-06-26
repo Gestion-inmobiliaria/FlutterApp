@@ -22,8 +22,9 @@ class PropertyFilter {
     if (minPrecio != null && property.precio < minPrecio!) return false;
     if (maxPrecio != null && property.precio > maxPrecio!) return false;
     if (minHabitaciones != null &&
-        (property.nroHabitaciones ?? 0) < minHabitaciones!)
+        (property.nroHabitaciones ?? 0) < minHabitaciones!) {
       return false;
+    }
     if (minBanos != null && (property.nroBanos ?? 0) < minBanos!) return false;
     if (categoria != null &&
         categoria!.isNotEmpty &&

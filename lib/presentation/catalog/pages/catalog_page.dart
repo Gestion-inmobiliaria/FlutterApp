@@ -15,10 +15,10 @@ class CatalogPage extends StatefulWidget {
   final String realStateName;
 
   const CatalogPage({
-    Key? key,
+    super.key,
     required this.realStateId,
     required this.realStateName,
-  }) : super(key: key);
+  });
 
   @override
   State<CatalogPage> createState() => _CatalogPageState();
@@ -52,7 +52,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
     // Cargar propiedades al iniciar
     _loadProperties();
-    
+
     // Cargar estado inicial de favoritos para mostrar correctamente los toggles
     _loadInitialFavoriteState();
 
@@ -63,7 +63,7 @@ class _CatalogPageState extends State<CatalogPage> {
       );
     });
   }
-  
+
   void _loadInitialFavoriteState() {
     // Cargar todos los favoritos para tener el estado inicial
     context.read<FavoriteBloc>().add(LoadFavorites());
@@ -362,312 +362,318 @@ class _CatalogPageState extends State<CatalogPage> {
 
           // Listado de propiedades
           Expanded(
-            child: _showFavorites
-                ? BlocBuilder<FavoriteBloc, FavoriteState>(
-                    builder: (context, favoriteState) {
-                      return _buildFavoritesContent(favoriteState);
-                    },
-                  )
-                : BlocBuilder<PropertyBloc, PropertyState>(
-                    builder: (context, state) {
-                      if (_isMapView) {
-                        if (state is PropertyLoaded) {
-                          return PropertyMapView(
-                            properties: state.filteredProperties,
-                          );
-                        } else if (state is PropertyLoading) {
+            child:
+                _showFavorites
+                    ? BlocBuilder<FavoriteBloc, FavoriteState>(
+                      builder: (context, favoriteState) {
+                        return _buildFavoritesContent(favoriteState);
+                      },
+                    )
+                    : BlocBuilder<PropertyBloc, PropertyState>(
+                      builder: (context, state) {
+                        if (_isMapView) {
+                          if (state is PropertyLoaded) {
+                            return PropertyMapView(
+                              properties: state.filteredProperties,
+                            );
+                          } else if (state is PropertyLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          } else {
+                            return const Center(
+                              child: Text(
+                                'No se pudieron cargar las propiedades para el mapa.',
+                              ),
+                            );
+                          }
+                        }
+
+                        if (state is PropertyLoading) {
                           return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        } else {
-                          return const Center(
-                            child: Text(
-                              'No se pudieron cargar las propiedades para el mapa.',
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Cargando propiedades...'),
+                              ],
                             ),
                           );
                         }
-                      }
 
-                      if (state is PropertyLoading) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text('Cargando propiedades...'),
-                            ],
-                          ),
-                        );
-                      }
-
-                      if (state is PropertyError) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 60,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Error al cargar propiedades',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32.0,
-                                ),
-                                child: Text(
-                                  state.message,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              _isRetrying
-                                  ? const CircularProgressIndicator()
-                                  : ElevatedButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _isRetrying = true;
-                                      });
-                                      _loadProperties();
-                                      Future.delayed(
-                                        const Duration(seconds: 2),
-                                        () {
-                                          if (mounted) {
-                                            setState(() {
-                                              _isRetrying = false;
-                                            });
-                                          }
-                                        },
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 32,
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('Reintentar'),
-                                  ),
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text('Volver'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      if (state is PropertyLoaded) {
-                        final displayProperties = state.filteredProperties;
-
-                        if (displayProperties.isEmpty) {
+                        if (state is PropertyError) {
                           return Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(
-                                  Icons.search_off,
+                                  Icons.error_outline,
                                   size: 60,
-                                  color: Colors.grey,
+                                  color: Colors.red,
                                 ),
                                 const SizedBox(height: 16),
                                 const Text(
-                                  'No se encontraron propiedades',
+                                  'Error al cargar propiedades',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  state.activeFilter != null &&
-                                          state.activeFilter!.isActive
-                                      ? 'Ninguna propiedad coincide con los filtros aplicados'
-                                      : 'No hay propiedades disponibles en este momento',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.grey),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32.0,
+                                  ),
+                                  child: Text(
+                                    state.message,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
                                 ),
                                 const SizedBox(height: 24),
-                                if (state.activeFilter != null &&
-                                    state.activeFilter!.isActive)
-                                  ElevatedButton(
-                                    onPressed: _clearFilters,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
+                                _isRetrying
+                                    ? const CircularProgressIndicator()
+                                    : ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _isRetrying = true;
+                                        });
+                                        _loadProperties();
+                                        Future.delayed(
+                                          const Duration(seconds: 2),
+                                          () {
+                                            if (mounted) {
+                                              setState(() {
+                                                _isRetrying = false;
+                                              });
+                                            }
+                                          },
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 32,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Text('Reintentar'),
                                     ),
-                                    child: const Text('Quitar filtros'),
-                                  ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('Volver'),
+                                ),
                               ],
                             ),
                           );
                         }
-                        
-                        // Cargar estado de favoritos para las propiedades visibles
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          final propertyIds = displayProperties.map((p) => p.id).toList();
-                          context.read<FavoriteBloc>().add(LoadFavoriteStatus(propertyIds));
-                        });
 
-                        return Column(
-                          children: [
-                            // Banner de aviso de datos de muestra si es error de autenticación
-                            if (state.isAuthError)
-                              Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.symmetric(
+                        if (state is PropertyLoaded) {
+                          final displayProperties = state.filteredProperties;
+
+                          if (displayProperties.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.search_off,
+                                    size: 60,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No se encontraron propiedades',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    state.activeFilter != null &&
+                                            state.activeFilter!.isActive
+                                        ? 'Ninguna propiedad coincide con los filtros aplicados'
+                                        : 'No hay propiedades disponibles en este momento',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  if (state.activeFilter != null &&
+                                      state.activeFilter!.isActive)
+                                    ElevatedButton(
+                                      onPressed: _clearFilters,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      child: const Text('Quitar filtros'),
+                                    ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          // Cargar estado de favoritos para las propiedades visibles
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final propertyIds =
+                                displayProperties.map((p) => p.id).toList();
+                            context.read<FavoriteBloc>().add(
+                              LoadFavoriteStatus(propertyIds),
+                            );
+                          });
+
+                          return Column(
+                            children: [
+                              // Banner de aviso de datos de muestra si es error de autenticación
+                              if (state.isAuthError)
+                                Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.amber.shade800,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.info_outline,
+                                            color: Colors.amber,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              state.authErrorMessage ??
+                                                  'Mostrando propiedades de ejemplo',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          // Aquí navegaríamos a la página de login
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Funcionalidad de inicio de sesión pendiente',
+                                              ),
+                                              backgroundColor: Colors.amber,
+                                            ),
+                                          );
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor:
+                                              Colors.amber.shade800,
+                                          side: BorderSide(
+                                            color: Colors.amber.shade800,
+                                          ),
+                                        ),
+                                        child: const Text('Iniciar sesión'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              // Contador de resultados
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 8,
                                 ),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.amber.shade800,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Column(
+                                child: Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.info_outline,
-                                          color: Colors.amber,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            state.authErrorMessage ??
-                                                'Mostrando propiedades de ejemplo',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        // Aquí navegaríamos a la página de login
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Funcionalidad de inicio de sesión pendiente',
-                                            ),
-                                            backgroundColor: Colors.amber,
-                                          ),
-                                        );
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor:
-                                            Colors.amber.shade800,
-                                        side: BorderSide(
-                                          color: Colors.amber.shade800,
-                                        ),
+                                    Text(
+                                      'Mostrando ${displayProperties.length} propiedades',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
                                       ),
-                                      child: const Text('Iniciar sesión'),
                                     ),
                                   ],
                                 ),
                               ),
 
-                            // Contador de resultados
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Mostrando ${displayProperties.length} propiedades',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                              // Grid de propiedades
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0,
                                   ),
-                                ],
-                              ),
-                            ),
+                                  child: GridView.builder(
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          childAspectRatio: 0.85,
+                                          crossAxisSpacing: 16,
+                                          mainAxisSpacing: 16,
+                                        ),
+                                    itemCount: displayProperties.length,
+                                    itemBuilder: (context, index) {
+                                      final property = displayProperties[index];
 
-                            // Grid de propiedades
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                ),
-                                child: GridView.builder(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        childAspectRatio: 0.85,
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 16,
-                                      ),
-                                  itemCount: displayProperties.length,
-                                  itemBuilder: (context, index) {
-                                    final property = displayProperties[index];
+                                      // Obtener imagen desde el JSON (primera disponible)
+                                      final String? imageUrl =
+                                          property.imagenes != null &&
+                                                  property.imagenes!.isNotEmpty
+                                              ? property.imagenes!.first
+                                              : null;
 
-                                    // Obtener imagen desde el JSON (primera disponible)
-                                    final String? imageUrl =
-                                        property.imagenes != null &&
-                                                property.imagenes!.isNotEmpty
-                                            ? property.imagenes!.first
-                                            : null;
+                                      // Extraer ubicación
+                                      final location =
+                                          property.ubicacion?['direccion'] ??
+                                          'Sin ubicación';
 
-                                    // Extraer ubicación
-                                    final location =
-                                        property.ubicacion?['direccion'] ??
-                                        'Sin ubicación';
-
-                                    return ExploreCard(
-                                      title: property.descripcion,
-                                      rating: '${property.precio}€',
-                                      location: location.toString(),
-                                      path:
-                                          imageUrl ??
-                                          _getAssetImage(
-                                            index,
-                                          ), // Usar una imagen de los assets como fallback
-                                      isHeart: false,
-                                      isNetworkImage: imageUrl != null,
-                                      property: property,
-                                      realStateName: widget.realStateName,
-                                    );
-                                  },
+                                      return ExploreCard(
+                                        title: property.descripcion,
+                                        rating: '${property.precio}€',
+                                        location: location.toString(),
+                                        path:
+                                            imageUrl ??
+                                            _getAssetImage(
+                                              index,
+                                            ), // Usar una imagen de los assets como fallback
+                                        isHeart: false,
+                                        isNetworkImage: imageUrl != null,
+                                        property: property,
+                                        realStateName: widget.realStateName,
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      }
+                            ],
+                          );
+                        }
 
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                        return const SizedBox.shrink();
+                      },
+                    ),
           ),
         ],
       ),

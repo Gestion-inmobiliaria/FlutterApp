@@ -36,8 +36,9 @@ class _MapWidgetState extends State<MapWidget> {
     final name = property.inmobiliaria?.toLowerCase() ?? '';
 
     if (name.contains('remax')) return 'assets/icons/remax.png';
-    if (name.contains('century') || name.contains('c21'))
+    if (name.contains('century') || name.contains('c21')) {
       return 'assets/icons/c21.png';
+    }
 
     return 'assets/icons/default.png';
   }
@@ -162,7 +163,7 @@ class _MapWidgetState extends State<MapWidget> {
                 this.estado = estado;
                 this.modalidad = modalidad;
                 this.categoria = categoria;
-                this.maxDistanceKm = maxDistance;
+                maxDistanceKm = maxDistance;
               });
               _applyFilters();
             },

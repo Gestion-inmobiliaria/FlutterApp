@@ -22,12 +22,12 @@ class PropertyDetailPage extends ConsumerStatefulWidget {
   final bool isNetworkImage;
 
   const PropertyDetailPage({
-    Key? key,
+    super.key,
     required this.property,
     required this.imagePath,
     required this.realStateName,
     this.isNetworkImage = false,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<PropertyDetailPage> createState() => _PropertyDetailPageState();
@@ -86,8 +86,9 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     final name = widget.realStateName.toLowerCase();
 
     if (name.contains('remax')) return 'assets/icons/remax.png';
-    if (name.contains('century') || name.contains('c21'))
+    if (name.contains('century') || name.contains('c21')) {
       return 'assets/icons/c21.png';
+    }
 
     return 'assets/icons/default.png';
   }
@@ -197,7 +198,7 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                   builder: (context) {
                     try {
                       context.read<FavoriteBloc>();
-                      
+
                       return Container(
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -210,12 +211,15 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
 
                             if (state is FavoriteLoaded) {
                               isFavorite =
-                                  state.favoriteStatus[widget.property.id] ?? false;
+                                  state.favoriteStatus[widget.property.id] ??
+                                  false;
                             }
 
                             return IconButton(
                               icon: Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
                                 color: Colors.red,
                               ),
                               onPressed: _toggleFavorite,
@@ -390,7 +394,7 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                     const SizedBox(height: 10),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15),
-                      child: Container(
+                      child: SizedBox(
                         height: 200,
                         width: double.infinity,
                         child:

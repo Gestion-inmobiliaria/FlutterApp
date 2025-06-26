@@ -22,7 +22,7 @@ class AppColors {
   static const Color hintColor = Color.fromRGBO(114, 114, 114, 1);
 
   static const Color textFieldDefaultFocus = Color(0xfff5f5f6);
-  static const Color textFieldDefaultBorderColor = Color(0xfffDFDFE1);
+  static const Color textFieldDefaultBorderColor = Color(0xfffdfdfe1);
   static const Color textFieldFocusBorderColor = Color.fromRGBO(19, 103, 33, 1);
 
   static const Color alertColor = Color(0xffff0222);
@@ -41,19 +41,17 @@ class AppColors {
   static const Color otpBackgroundColor = Color(0xffff5f5f6);
   static const Color otpHintColor = Color.fromRGBO(170, 170, 170, 1);
 
-  static const MaterialColor primaryMaterialColor = MaterialColor(
-    0xff58ee4a,
-    <int, Color>{
-      50: Color(0xff58ee4a),
-      100: Color(0xff58ee4a),
-      200: Color(0xff58ee4a),
-      300: Color(0xff58ee4a),
-      400: Color(0xff58ee4a),
-      500: Color(0xff58ee4a),
-      600: Color(0xff58ee4a),
-      700: Color(0xff58ee4a),
-      800: Color(0xff58ee4a),
-      900: Color(0xff58ee4a),
-    },
-  );
+  static const MaterialColor primaryMaterialColor =
+      MaterialColor(0xff58ee4a, <int, Color>{
+        50: Color(0xff58ee4a),
+        100: Color(0xff58ee4a),
+        200: Color(0xff58ee4a),
+        300: Color(0xff58ee4a),
+        400: Color(0xff58ee4a),
+        500: Color(0xff58ee4a),
+        600: Color(0xff58ee4a),
+        700: Color(0xff58ee4a),
+        800: Color(0xff58ee4a),
+        900: Color(0xff58ee4a),
+      });
 }

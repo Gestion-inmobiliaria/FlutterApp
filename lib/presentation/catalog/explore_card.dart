@@ -19,7 +19,7 @@ class ExploreCard extends StatefulWidget {
   final bool isNetworkImage;
   final Property? property;
   final String realStateName;
-  
+
   // Lista de imágenes disponibles en assets para usar como fallback
   static const List<String> _assetImages = [
     'assets/images/property.jpg',
@@ -30,9 +30,9 @@ class ExploreCard extends StatefulWidget {
     'assets/images/product3.png',
     'assets/images/product4.png',
   ];
-  
+
   const ExploreCard({
-    Key? key,
+    super.key,
     required this.location,
     required this.title,
     required this.rating,
@@ -41,7 +41,7 @@ class ExploreCard extends StatefulWidget {
     this.isNetworkImage = true,
     this.property,
     this.realStateName = '',
-  }) : super(key: key);
+  });
 
   @override
   State<ExploreCard> createState() => _ExploreCardState();
@@ -51,7 +51,7 @@ class _ExploreCardState extends State<ExploreCard> {
   @override
   void initState() {
     super.initState();
-    
+
     // Verificar el estado inicial de favorito si tenemos una propiedad
     if (widget.property != null) {
       // Usar el Bloc del contexto padre después de que el widget esté construido
@@ -81,12 +81,15 @@ class _ExploreCardState extends State<ExploreCard> {
         final favoriteBloc = context.read<FavoriteBloc>();
         final currentState = favoriteBloc.state;
         bool isCurrentlyFavorite = false;
-        
+
         if (currentState is FavoriteLoaded) {
-          isCurrentlyFavorite = currentState.favoriteStatus[widget.property!.id] ?? false;
+          isCurrentlyFavorite =
+              currentState.favoriteStatus[widget.property!.id] ?? false;
         }
-        
-        favoriteBloc.add(ToggleFavorite(widget.property!.id, isCurrentlyFavorite));
+
+        favoriteBloc.add(
+          ToggleFavorite(widget.property!.id, isCurrentlyFavorite),
+        );
       } catch (e) {
         debugPrint('Error toggling favorite: $e');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,17 +102,18 @@ class _ExploreCardState extends State<ExploreCard> {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-              onTap: () {
+      onTap: () {
         if (widget.property != null) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PropertyDetailPage(
-                property: widget.property!,
-                imagePath: widget.path,
-                realStateName: widget.realStateName,
-                isNetworkImage: widget.isNetworkImage,
-              ),
+              builder:
+                  (context) => PropertyDetailPage(
+                    property: widget.property!,
+                    imagePath: widget.path,
+                    realStateName: widget.realStateName,
+                    isNetworkImage: widget.isNetworkImage,
+                  ),
             ),
           );
         }
@@ -140,37 +144,39 @@ class _ExploreCardState extends State<ExploreCard> {
                         topLeft: Radius.circular(15),
                         topRight: Radius.circular(15),
                       ),
-                      child: widget.isNetworkImage
-                          ? Image(
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              image: NetworkImage(widget.path),
-                              errorBuilder: (context, error, stackTrace) {
-                                // Si hay error al cargar la imagen de red, usar una imagen de assets
-                                return Image.asset(
-                                  _getFallbackImage(),
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              widget.path,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Si hay error al cargar la imagen de assets, usar otra imagen de assets
-                                return Image.asset(
-                                  ExploreCard._assetImages[0], // Usar la primera imagen como última opción
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                );
-                              },
-                            ),
+                      child:
+                          widget.isNetworkImage
+                              ? Image(
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                image: NetworkImage(widget.path),
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Si hay error al cargar la imagen de red, usar una imagen de assets
+                                  return Image.asset(
+                                    _getFallbackImage(),
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  );
+                                },
+                              )
+                              : Image.asset(
+                                widget.path,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Si hay error al cargar la imagen de assets, usar otra imagen de assets
+                                  return Image.asset(
+                                    ExploreCard
+                                        ._assetImages[0], // Usar la primera imagen como última opción
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  );
+                                },
+                              ),
                     ),
                   ),
                   Positioned(
@@ -179,11 +185,14 @@ class _ExploreCardState extends State<ExploreCard> {
                     child: BlocBuilder<FavoriteBloc, FavoriteState>(
                       builder: (context, state) {
                         bool isFavorite = false;
-                        
-                        if (state is FavoriteLoaded && widget.property != null) {
-                          isFavorite = state.favoriteStatus[widget.property!.id] ?? false;
+
+                        if (state is FavoriteLoaded &&
+                            widget.property != null) {
+                          isFavorite =
+                              state.favoriteStatus[widget.property!.id] ??
+                              false;
                         }
-                        
+
                         return GestureDetector(
                           onTap: _toggleFavorite,
                           child: Container(
@@ -193,7 +202,9 @@ class _ExploreCardState extends State<ExploreCard> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Icon(
-                              isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                              isFavorite
+                                  ? CupertinoIcons.heart_fill
+                                  : CupertinoIcons.heart,
                               size: 20,
                               color: AppColors.whiteColor,
                             ),
@@ -205,7 +216,7 @@ class _ExploreCardState extends State<ExploreCard> {
                 ],
               ),
             ),
-            
+
             // Información de la propiedad
             Expanded(
               flex: 1,
@@ -227,7 +238,7 @@ class _ExploreCardState extends State<ExploreCard> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    
+
                     // Precio y ubicación
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -235,15 +246,22 @@ class _ExploreCardState extends State<ExploreCard> {
                         // Precio con icono
                         Row(
                           children: [
-                            const Icon(Icons.euro, color: Colors.amber, size: 14),
+                            const Icon(
+                              Icons.euro,
+                              color: Colors.amber,
+                              size: 14,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               widget.rating,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
-                        
+
                         // Ubicación con icono
                         Expanded(
                           child: Row(

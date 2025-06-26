@@ -4,7 +4,6 @@ import 'package:inmobiliaria_app/data/sources/property_remote_datasource.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_bloc.dart';
 import 'package:inmobiliaria_app/presentation/catalog/pages/catalog_page.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
-import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_state.dart';
 
 class RecommendationSection extends StatelessWidget {
@@ -234,23 +233,25 @@ class _ViewPropertiesButtonState extends State<_ViewPropertiesButton> {
 
       if (!mounted) return;
 
-      // Navegar a la página de catálogo 
+      // Navegar a la página de catálogo
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => BlocProvider(
-            create: (context) => PropertyBloc(
-              propertyDatasource: PropertyRemoteDatasource(),
-            ),
-            child: CatalogPage(
-              realStateId: widget.realStateId,
-              realStateName: widget.realStateName,
-            ),
-          ),
+          builder:
+              (context) => BlocProvider(
+                create:
+                    (context) => PropertyBloc(
+                      propertyDatasource: PropertyRemoteDatasource(),
+                    ),
+                child: CatalogPage(
+                  realStateId: widget.realStateId,
+                  realStateName: widget.realStateName,
+                ),
+              ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       // Mostrar un snackbar en caso de error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -273,32 +274,30 @@ class _ViewPropertiesButtonState extends State<_ViewPropertiesButton> {
     return GestureDetector(
       onTap: _navigateToPropertiesCatalog,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF3F6CDF),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        child:
+            _isLoading
+                ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : const Text(
+                  'Ver Inmuebles',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
                 ),
-              )
-            : const Text(
-                'Ver Inmuebles',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                ),
-              ),
       ),
     );
   }

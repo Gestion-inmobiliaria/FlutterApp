@@ -45,13 +45,17 @@ class PropertyFilter {
     List<String> activeFilters = [];
 
     if (priceRange != null) {
-      activeFilters.add('Precio: ${priceRange!.start.toInt()}€ - ${priceRange!.end.toInt()}€');
+      activeFilters.add(
+        'Precio: ${priceRange!.start.toInt()}€ - ${priceRange!.end.toInt()}€',
+      );
     }
     if (location != null && location!.isNotEmpty) {
       activeFilters.add('Ubicación: $location');
     }
     if (areaRange != null) {
-      activeFilters.add('Área: ${areaRange!.start.toInt()}m² - ${areaRange!.end.toInt()}m²');
+      activeFilters.add(
+        'Área: ${areaRange!.start.toInt()}m² - ${areaRange!.end.toInt()}m²',
+      );
     }
     if (minBedrooms != null && minBedrooms! > 0) {
       activeFilters.add('Habitaciones: $minBedrooms+');
@@ -70,10 +74,7 @@ class PropertyFilter {
 class FilterPage extends StatefulWidget {
   final PropertyFilter initialFilter;
 
-  const FilterPage({
-    Key? key,
-    required this.initialFilter,
-  }) : super(key: key);
+  const FilterPage({super.key, required this.initialFilter});
 
   @override
   State<FilterPage> createState() => _FilterPageState();
@@ -97,9 +98,14 @@ class _FilterPageState extends State<FilterPage> {
   void initState() {
     super.initState();
     // Inicializar con valores del filtro actual o valores predeterminados
-    _priceRange = widget.initialFilter.priceRange ?? const RangeValues(MIN_PRICE, MAX_PRICE);
-    _locationController = TextEditingController(text: widget.initialFilter.location ?? '');
-    _areaRange = widget.initialFilter.areaRange ?? const RangeValues(MIN_AREA, MAX_AREA);
+    _priceRange =
+        widget.initialFilter.priceRange ??
+        const RangeValues(MIN_PRICE, MAX_PRICE);
+    _locationController = TextEditingController(
+      text: widget.initialFilter.location ?? '',
+    );
+    _areaRange =
+        widget.initialFilter.areaRange ?? const RangeValues(MIN_AREA, MAX_AREA);
     _minBedrooms = widget.initialFilter.minBedrooms ?? 0;
     _minBathrooms = widget.initialFilter.minBathrooms ?? 0;
     _minParkingSpots = widget.initialFilter.minParkingSpots ?? 0;
@@ -117,10 +123,7 @@ class _FilterPageState extends State<FilterPage> {
       appBar: AppBar(
         title: const Text(
           'Filtrar propiedades',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -207,10 +210,7 @@ class _FilterPageState extends State<FilterPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     );
   }
 
@@ -320,20 +320,11 @@ class _FilterPageState extends State<FilterPage> {
     );
   }
 
-  Widget _buildCountSelector(
-    String label,
-    int value,
-    Function(int) onChanged,
-  ) {
+  Widget _buildCountSelector(String label, int value, Function(int) onChanged) {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade700,
-            ),
-          ),
+          child: Text(label, style: TextStyle(color: Colors.grey.shade700)),
         ),
         Container(
           decoration: BoxDecoration(
@@ -345,13 +336,14 @@ class _FilterPageState extends State<FilterPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.remove),
-                onPressed: value > 0
-                    ? () => onChanged(value - 1)
-                    : null,
+                onPressed: value > 0 ? () => onChanged(value - 1) : null,
                 color: value > 0 ? AppColors.primaryColor : Colors.grey,
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(4),
@@ -392,10 +384,7 @@ class _FilterPageState extends State<FilterPage> {
         ),
         child: const Text(
           'Aplicar filtros',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -415,7 +404,7 @@ class _FilterPageState extends State<FilterPage> {
   void _applyFilters() {
     // Verificar si hay algún filtro activo
     final bool isAnyFilterActive = _isAnyFilterActive();
-    
+
     // Crear un nuevo filtro con los valores actuales
     final filter = PropertyFilter(
       priceRange: _isPriceFilterActive() ? _priceRange : null,
@@ -451,4 +440,4 @@ class _FilterPageState extends State<FilterPage> {
         _minBathrooms > 0 ||
         _minParkingSpots > 0;
   }
-} 
+}

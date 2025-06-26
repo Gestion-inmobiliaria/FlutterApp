@@ -4,7 +4,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
 import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_vectors.dart';
 import 'package:inmobiliaria_app/presentation/intro/pages/get_started.dart';
