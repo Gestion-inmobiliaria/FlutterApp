@@ -258,7 +258,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
                   BlocBuilder<PropertyBloc, PropertyState>(
                     builder: (context, state) {
-                      final hasActiveFilters =
+                        final hasActiveFilters =
                           state is PropertyLoaded &&
                           state.activeFilter != null &&
                           state.activeFilter!.isActive;
