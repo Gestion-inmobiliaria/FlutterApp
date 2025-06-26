@@ -10,6 +10,13 @@ import 'domain/repository/auth_repository.dart';
 import 'presentation/auth/bloc/auth_bloc.dart';
 import 'package:inmobiliaria_app/data/sources/property_remote_datasource.dart';
 
+// Favoritos
+import 'package:inmobiliaria_app/data/sources/favorite_remote_datasource.dart';
+import 'package:inmobiliaria_app/data/repository/favorite_repository_impl.dart';
+import 'package:inmobiliaria_app/domain/repository/favorite_repository.dart';
+import 'package:inmobiliaria_app/domain/usecases/favorite_usecases.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
+
 final sl = GetIt.instance;
 
 void setupLocator() {
@@ -20,6 +27,10 @@ void setupLocator() {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(client: sl()),
   );
+  
+  sl.registerLazySingleton<FavoriteRemoteDataSource>(
+    () => FavoriteRemoteDataSourceImpl(client: sl()),
+  );
 
   // Datasources
   sl.registerLazySingleton<PropertyRemoteDatasource>(
@@ -28,11 +39,30 @@ void setupLocator() {
 
   // Repository
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
+  
+  sl.registerLazySingleton<FavoriteRepository>(
+    () => FavoriteRepositoryImpl(remoteDataSource: sl()),
+  );
 
   // UseCases
   sl.registerLazySingleton(() => LoginUser(sl()));
   sl.registerLazySingleton(() => RegisterUserUseCase(sl())); // ✅ nuevo
+  
+  // Favorite UseCases
+  sl.registerLazySingleton(() => AddToFavoritesUseCase(repository: sl()));
+  sl.registerLazySingleton(() => RemoveFromFavoritesUseCase(repository: sl()));
+  sl.registerLazySingleton(() => GetFavoritesUseCase(repository: sl()));
+  sl.registerLazySingleton(() => GetFavoritesByRealStateUseCase(repository: sl()));
+  sl.registerLazySingleton(() => CheckIsFavoriteUseCase(repository: sl()));
 
   // Bloc
   sl.registerFactory(() => AuthBloc(sl(), sl())); // ✅ actualizado
+  
+  sl.registerFactory(() => FavoriteBloc(
+    addToFavoritesUseCase: sl(),
+    removeFromFavoritesUseCase: sl(),
+    getFavoritesUseCase: sl(),
+    getFavoritesByRealStateUseCase: sl(),
+    checkIsFavoriteUseCase: sl(),
+  ));
 }

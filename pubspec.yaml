@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_svg:
-  shared_preferences:
+  shared_preferences: ^2.5.3
   flutter_bloc:
   hydrated_bloc:
   http: 
@@ -53,7 +53,7 @@ dependencies:
   hive_flutter: ^1.1.0
   dio: ^5.3.3 
   flutter_riverpod: ^2.6.1
-  rive: ^0.13.20
+  # rive: ^0.13.20
   google_maps_flutter: ^2.12.2
   url_launcher: ^6.3.1
   font_awesome_flutter: ^10.8.0

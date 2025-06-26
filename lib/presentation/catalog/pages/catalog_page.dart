@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_bloc.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_event.dart';
 import 'package:inmobiliaria_app/presentation/catalog/bloc/property_state.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
 import 'package:inmobiliaria_app/presentation/catalog/explore_card.dart';
 import 'package:inmobiliaria_app/presentation/catalog/pages/filter_page.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
 import 'package:inmobiliaria_app/presentation/maps/pages/map_view_page.dart';
+import 'package:inmobiliaria_app/test_login.dart';
 
 class CatalogPage extends StatefulWidget {
   final String realStateId;
@@ -24,6 +26,7 @@ class CatalogPage extends StatefulWidget {
 
 class _CatalogPageState extends State<CatalogPage> {
   bool _isMapView = false;
+  bool _showFavorites = false;
 
   final TextEditingController _searchController = TextEditingController();
   bool _isRetrying = false;
@@ -43,8 +46,15 @@ class _CatalogPageState extends State<CatalogPage> {
   @override
   void initState() {
     super.initState();
+
+    // Solo para testing - simular login automático
+    _initializeWithTestAuth();
+
     // Cargar propiedades al iniciar
     _loadProperties();
+    
+    // Cargar estado inicial de favoritos para mostrar correctamente los toggles
+    _loadInitialFavoriteState();
 
     // Escuchar cambios en la búsqueda
     _searchController.addListener(() {
@@ -52,6 +62,24 @@ class _CatalogPageState extends State<CatalogPage> {
         SearchProperties(_searchController.text),
       );
     });
+  }
+  
+  void _loadInitialFavoriteState() {
+    // Cargar todos los favoritos para tener el estado inicial
+    context.read<FavoriteBloc>().add(LoadFavorites());
+  }
+
+  // Solo para testing - simular autenticación
+  Future<void> _initializeWithTestAuth() async {
+    try {
+      final hasToken = await TestAuthHelper.hasToken();
+      if (!hasToken) {
+        await TestAuthHelper.simulateLogin();
+        debugPrint('🔥 Token temporal creado para testing de favoritos');
+      }
+    } catch (e) {
+      debugPrint('🔥 Error al simular login: $e');
+    }
   }
 
   void _loadProperties() {
@@ -139,10 +167,23 @@ class _CatalogPageState extends State<CatalogPage> {
                 ],
               ),
               child: ToggleButtons(
-                isSelected: [_isMapView == false, _isMapView == true],
+                isSelected: [
+                  !_isMapView && !_showFavorites,
+                  _isMapView && !_showFavorites,
+                  _showFavorites,
+                ],
                 onPressed: (int index) {
                   setState(() {
-                    _isMapView = index == 1;
+                    if (index == 0) {
+                      _isMapView = false;
+                      _showFavorites = false;
+                    } else if (index == 1) {
+                      _isMapView = true;
+                      _showFavorites = false;
+                    } else {
+                      _isMapView = false;
+                      _showFavorites = true;
+                    }
                   });
 
                   if (index == 1) {
@@ -151,6 +192,11 @@ class _CatalogPageState extends State<CatalogPage> {
                       LoadPropertiesWithLocation(
                         realStateId: widget.realStateId,
                       ),
+                    );
+                  } else if (index == 2) {
+                    // Si cambia a favoritos, cargar TODOS los favoritos del usuario
+                    context.read<FavoriteBloc>().add(
+                      LoadFavorites(), // Sin realStateId para cargar todos
                     );
                   } else {
                     // Si vuelve al catálogo, cargar todas las propiedades normales
@@ -164,16 +210,20 @@ class _CatalogPageState extends State<CatalogPage> {
                 color: Colors.black87,
                 splashColor: AppColors.primaryColor.withOpacity(0.2),
                 borderWidth: 0,
-                constraints: const BoxConstraints(minHeight: 40, minWidth: 120),
+                constraints: const BoxConstraints(minHeight: 40, minWidth: 80),
                 textStyle: const TextStyle(fontWeight: FontWeight.w600),
                 children: const [
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text("Catálogo"),
                   ),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text("Mapa"),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text("Favoritos"),
                   ),
                 ],
               ),
@@ -312,289 +362,478 @@ class _CatalogPageState extends State<CatalogPage> {
 
           // Listado de propiedades
           Expanded(
-            child: BlocBuilder<PropertyBloc, PropertyState>(
-              builder: (context, state) {
-                if (_isMapView) {
-                  if (state is PropertyLoaded) {
-                    return PropertyMapView(
-                      properties: state.filteredProperties,
-                    );
-                  } else if (state is PropertyLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else {
-                    return const Center(
-                      child: Text(
-                        'No se pudieron cargar las propiedades para el mapa.',
-                      ),
-                    );
-                  }
-                }
-
-                if (state is PropertyLoading) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Cargando propiedades...'),
-                      ],
-                    ),
-                  );
-                }
-
-                if (state is PropertyError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 60,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Error al cargar propiedades',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                          child: Text(
-                            state.message,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _isRetrying
-                            ? const CircularProgressIndicator()
-                            : ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isRetrying = true;
-                                });
-                                _loadProperties();
-                                Future.delayed(const Duration(seconds: 2), () {
-                                  if (mounted) {
-                                    setState(() {
-                                      _isRetrying = false;
-                                    });
-                                  }
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text('Reintentar'),
+            child: _showFavorites
+                ? BlocBuilder<FavoriteBloc, FavoriteState>(
+                    builder: (context, favoriteState) {
+                      return _buildFavoritesContent(favoriteState);
+                    },
+                  )
+                : BlocBuilder<PropertyBloc, PropertyState>(
+                    builder: (context, state) {
+                      if (_isMapView) {
+                        if (state is PropertyLoaded) {
+                          return PropertyMapView(
+                            properties: state.filteredProperties,
+                          );
+                        } else if (state is PropertyLoading) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else {
+                          return const Center(
+                            child: Text(
+                              'No se pudieron cargar las propiedades para el mapa.',
                             ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Volver'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                          );
+                        }
+                      }
 
-                if (state is PropertyLoaded) {
-                  final displayProperties = state.filteredProperties;
-
-                  if (displayProperties.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.search_off,
-                            size: 60,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No se encontraron propiedades',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            state.activeFilter != null &&
-                                    state.activeFilter!.isActive
-                                ? 'Ninguna propiedad coincide con los filtros aplicados'
-                                : 'No hay propiedades disponibles en este momento',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 24),
-                          if (state.activeFilter != null &&
-                              state.activeFilter!.isActive)
-                            ElevatedButton(
-                              onPressed: _clearFilters,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Quitar filtros'),
-                            ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      // Banner de aviso de datos de muestra si es error de autenticación
-                      if (state.isAuthError)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.amber.shade800,
-                              width: 1,
-                            ),
-                          ),
+                      if (state is PropertyLoading) {
+                        return const Center(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.info_outline,
-                                    color: Colors.amber,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      state.authErrorMessage ??
-                                          'Mostrando propiedades de ejemplo',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black87,
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Cargando propiedades...'),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (state is PropertyError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 60,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Error al cargar propiedades',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32.0,
+                                ),
+                                child: Text(
+                                  state.message,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _isRetrying
+                                  ? const CircularProgressIndicator()
+                                  : ElevatedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _isRetrying = true;
+                                      });
+                                      _loadProperties();
+                                      Future.delayed(
+                                        const Duration(seconds: 2),
+                                        () {
+                                          if (mounted) {
+                                            setState(() {
+                                              _isRetrying = false;
+                                            });
+                                          }
+                                        },
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                        vertical: 12,
                                       ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('Reintentar'),
+                                  ),
+                              const SizedBox(height: 16),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Volver'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (state is PropertyLoaded) {
+                        final displayProperties = state.filteredProperties;
+
+                        if (displayProperties.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.search_off,
+                                  size: 60,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No se encontraron propiedades',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  state.activeFilter != null &&
+                                          state.activeFilter!.isActive
+                                      ? 'Ninguna propiedad coincide con los filtros aplicados'
+                                      : 'No hay propiedades disponibles en este momento',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 24),
+                                if (state.activeFilter != null &&
+                                    state.activeFilter!.isActive)
+                                  ElevatedButton(
+                                    onPressed: _clearFilters,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Quitar filtros'),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        // Cargar estado de favoritos para las propiedades visibles
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          final propertyIds = displayProperties.map((p) => p.id).toList();
+                          context.read<FavoriteBloc>().add(LoadFavoriteStatus(propertyIds));
+                        });
+
+                        return Column(
+                          children: [
+                            // Banner de aviso de datos de muestra si es error de autenticación
+                            if (state.isAuthError)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.amber.shade800,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.info_outline,
+                                          color: Colors.amber,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            state.authErrorMessage ??
+                                                'Mostrando propiedades de ejemplo',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        // Aquí navegaríamos a la página de login
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Funcionalidad de inicio de sesión pendiente',
+                                            ),
+                                            backgroundColor: Colors.amber,
+                                          ),
+                                        );
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor:
+                                            Colors.amber.shade800,
+                                        side: BorderSide(
+                                          color: Colors.amber.shade800,
+                                        ),
+                                      ),
+                                      child: const Text('Iniciar sesión'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            // Contador de resultados
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Mostrando ${displayProperties.length} propiedades',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              OutlinedButton(
-                                onPressed: () {
-                                  // Aquí navegaríamos a la página de login
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Funcionalidad de inicio de sesión pendiente',
-                                      ),
-                                      backgroundColor: Colors.amber,
-                                    ),
-                                  );
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.amber.shade800,
-                                  side: BorderSide(
-                                    color: Colors.amber.shade800,
-                                  ),
-                                ),
-                                child: const Text('Iniciar sesión'),
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
 
-                      // Contador de resultados
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Mostrando ${displayProperties.length} propiedades',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
+                            // Grid de propiedades
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: GridView.builder(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 0.85,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                      ),
+                                  itemCount: displayProperties.length,
+                                  itemBuilder: (context, index) {
+                                    final property = displayProperties[index];
+
+                                    // Obtener imagen desde el JSON (primera disponible)
+                                    final String? imageUrl =
+                                        property.imagenes != null &&
+                                                property.imagenes!.isNotEmpty
+                                            ? property.imagenes!.first
+                                            : null;
+
+                                    // Extraer ubicación
+                                    final location =
+                                        property.ubicacion?['direccion'] ??
+                                        'Sin ubicación';
+
+                                    return ExploreCard(
+                                      title: property.descripcion,
+                                      rating: '${property.precio}€',
+                                      location: location.toString(),
+                                      path:
+                                          imageUrl ??
+                                          _getAssetImage(
+                                            index,
+                                          ), // Usar una imagen de los assets como fallback
+                                      isHeart: false,
+                                      isNetworkImage: imageUrl != null,
+                                      property: property,
+                                      realStateName: widget.realStateName,
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                      ),
+                        );
+                      }
 
-                      // Grid de propiedades
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.85,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                            itemCount: displayProperties.length,
-                            itemBuilder: (context, index) {
-                              final property = displayProperties[index];
-
-                              // Obtener imagen desde el JSON (primera disponible)
-                              final String? imageUrl =
-                                  property.imagenes != null &&
-                                          property.imagenes!.isNotEmpty
-                                      ? property.imagenes!.first
-                                      : null;
-
-                              // Extraer ubicación
-                              final location =
-                                  property.ubicacion?['direccion'] ??
-                                  'Sin ubicación';
-
-                              return ExploreCard(
-                                title: property.descripcion,
-                                rating: '${property.precio}€',
-                                location: location.toString(),
-                                path:
-                                    imageUrl ??
-                                    _getAssetImage(index), // Usar una imagen de los assets como fallback
-                                isHeart: false,
-                                isNetworkImage: imageUrl != null,
-                                property: property,
-                                realStateName: widget.realStateName,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }
-
-                return const SizedBox.shrink();
-              },
-            ),
+                      return const SizedBox.shrink();
+                    },
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildFavoritesContent(FavoriteState favoriteState) {
+    if (favoriteState is FavoriteLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando favoritos...'),
+          ],
+        ),
+      );
+    }
+
+    if (favoriteState is FavoriteError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text(
+              'Error al cargar favoritos',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Text(
+                favoriteState.message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                context.read<FavoriteBloc>().add(
+                  LoadFavorites(), // Sin realStateId para cargar todos
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (favoriteState is FavoriteLoaded) {
+      final favorites = favoriteState.favorites;
+
+      if (favorites.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.favorite_border, size: 60, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'No tienes favoritos',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Agrega propiedades a favoritos para verlas aquí',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _showFavorites = false;
+                  });
+                  _loadProperties();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Explorar propiedades'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Column(
+        children: [
+          // Contador de resultados
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'Tienes ${favorites.length} propiedades favoritas',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Grid de favoritos
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: favorites.length,
+                itemBuilder: (context, index) {
+                  final property = favorites[index];
+
+                  // Obtener imagen desde el JSON (primera disponible)
+                  final String? imageUrl =
+                      property.imagenes != null && property.imagenes!.isNotEmpty
+                          ? property.imagenes!.first
+                          : null;
+
+                  // Extraer ubicación
+                  final location =
+                      property.ubicacion?['direccion'] ?? 'Sin ubicación';
+
+                  return ExploreCard(
+                    title: property.descripcion,
+                    rating: '${property.precio}€',
+                    location: location.toString(),
+                    path: imageUrl ?? _getAssetImage(index),
+                    isHeart: true, // Siempre true en favoritos
+                    isNetworkImage: imageUrl != null,
+                    property: property,
+                    realStateName: widget.realStateName,
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Estado inicial
+    return const Center(child: Text('Cargando...'));
   }
 }

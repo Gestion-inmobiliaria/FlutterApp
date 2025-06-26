@@ -1,13 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:riserealestate/components/gap.dart';
 // import 'package:riserealestate/constant/colors.dart';
 import 'package:inmobiliaria_app/domain/entities/property_entity.dart';
 import 'package:inmobiliaria_app/presentation/catalog/pages/property_detail_page.dart';
 import 'package:inmobiliaria_app/presentation/gap.dart';
 import 'package:inmobiliaria_app/presentation/constant/colors.dart';
+import 'package:inmobiliaria_app/presentation/catalog/bloc/favorite_bloc.dart';
+import 'package:inmobiliaria_app/service_locator.dart';
 
-class ExploreCard extends StatelessWidget {
+class ExploreCard extends StatefulWidget {
   //   Tarjeta para explorar propiedades cercanas
   // Incluye imagen, título, calificación y ubicación
   // Tiene botón de "favorito" en la esquina superior derecha
@@ -40,26 +43,72 @@ class ExploreCard extends StatelessWidget {
     this.realStateName = '',
   }) : super(key: key);
 
+  @override
+  State<ExploreCard> createState() => _ExploreCardState();
+}
+
+class _ExploreCardState extends State<ExploreCard> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Verificar el estado inicial de favorito si tenemos una propiedad
+    if (widget.property != null) {
+      // Usar el Bloc del contexto padre después de que el widget esté construido
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          try {
+            final favoriteBloc = context.read<FavoriteBloc>();
+            favoriteBloc.add(CheckFavoriteStatus(widget.property!.id));
+          } catch (e) {
+            debugPrint('Error accessing FavoriteBloc: $e');
+          }
+        }
+      });
+    }
+  }
+
   // Obtener una imagen de los assets basada en el hash del título
   String _getFallbackImage() {
     // Usar el hash del título para seleccionar una imagen consistente para la misma propiedad
-    final int hashCode = title.hashCode.abs();
-    return _assetImages[hashCode % _assetImages.length];
+    final int hashCode = widget.title.hashCode.abs();
+    return ExploreCard._assetImages[hashCode % ExploreCard._assetImages.length];
+  }
+
+  void _toggleFavorite() {
+    if (widget.property != null) {
+      try {
+        final favoriteBloc = context.read<FavoriteBloc>();
+        final currentState = favoriteBloc.state;
+        bool isCurrentlyFavorite = false;
+        
+        if (currentState is FavoriteLoaded) {
+          isCurrentlyFavorite = currentState.favoriteStatus[widget.property!.id] ?? false;
+        }
+        
+        favoriteBloc.add(ToggleFavorite(widget.property!.id, isCurrentlyFavorite));
+      } catch (e) {
+        debugPrint('Error toggling favorite: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al actualizar favoritos')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        if (property != null) {
+              onTap: () {
+        if (widget.property != null) {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => PropertyDetailPage(
-                property: property!,
-                imagePath: path,
-                realStateName: realStateName,
-                isNetworkImage: isNetworkImage,
+                property: widget.property!,
+                imagePath: widget.path,
+                realStateName: widget.realStateName,
+                isNetworkImage: widget.isNetworkImage,
               ),
             ),
           );
@@ -91,12 +140,12 @@ class ExploreCard extends StatelessWidget {
                         topLeft: Radius.circular(15),
                         topRight: Radius.circular(15),
                       ),
-                      child: isNetworkImage
+                      child: widget.isNetworkImage
                           ? Image(
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              image: NetworkImage(path),
+                              image: NetworkImage(widget.path),
                               errorBuilder: (context, error, stackTrace) {
                                 // Si hay error al cargar la imagen de red, usar una imagen de assets
                                 return Image.asset(
@@ -108,14 +157,14 @@ class ExploreCard extends StatelessWidget {
                               },
                             )
                           : Image.asset(
-                              path,
+                              widget.path,
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
                               errorBuilder: (context, error, stackTrace) {
                                 // Si hay error al cargar la imagen de assets, usar otra imagen de assets
                                 return Image.asset(
-                                  _assetImages[0], // Usar la primera imagen como última opción
+                                  ExploreCard._assetImages[0], // Usar la primera imagen como última opción
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
@@ -127,17 +176,30 @@ class ExploreCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        CupertinoIcons.heart,
-                        size: 20,
-                        color: AppColors.whiteColor,
-                      ),
+                    child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                      builder: (context, state) {
+                        bool isFavorite = false;
+                        
+                        if (state is FavoriteLoaded && widget.property != null) {
+                          isFavorite = state.favoriteStatus[widget.property!.id] ?? false;
+                        }
+                        
+                        return GestureDetector(
+                          onTap: _toggleFavorite,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor, // Siempre azul
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                              size: 20,
+                              color: AppColors.whiteColor,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -155,7 +217,7 @@ class ExploreCard extends StatelessWidget {
                     // Título
                     Expanded(
                       child: Text(
-                        title,
+                        widget.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -176,7 +238,7 @@ class ExploreCard extends StatelessWidget {
                             const Icon(Icons.euro, color: Colors.amber, size: 14),
                             const SizedBox(width: 2),
                             Text(
-                              rating,
+                              widget.rating,
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -195,7 +257,7 @@ class ExploreCard extends StatelessWidget {
                               const SizedBox(width: 2),
                               Expanded(
                                 child: Text(
-                                  location,
+                                  widget.location,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
