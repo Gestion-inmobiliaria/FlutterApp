@@ -6,7 +6,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // La clase `AuthRemoteDataSourceImpl` implementa la interfaz `AuthRemoteDataSource`.
 // Su objetivo es realizar las operaciones de autenticación directamente con una API remota.
-final baseUrl = dotenv.env['URL_BACKEND']!;
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   // Cliente HTTP utilizado para realizar las solicitudes a la API.
@@ -20,9 +19,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   // Método para iniciar sesión.
   // Este método realiza una solicitud POST a la API con las credenciales del usuario.
   Future<String> login(String email, String password) async {
+    final baseUrl = dotenv.env['URL_BACKEND']!;
     final loginUrl = Uri.parse('$baseUrl/api/auth/customer/login');
     try {
-      print('Enviando request al backend...');
+      print('loginUrl: $loginUrl');
+
       final response = await client.post(
         loginUrl,
         headers: {'Content-Type': 'application/json'},
@@ -45,6 +46,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> register(UserEntity user) async {
+    final baseUrl = dotenv.env['URL_BACKEND']!;
     final registerUrl = Uri.parse('$baseUrl/api/auth/customer/register');
 
     final response = await client.post(
@@ -66,5 +68,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           jsonDecode(response.body)['message'] ?? 'Error desconocido';
       throw Exception('Registro fallido: $message');
     }
+  }
+
+  Future<UserEntity?> getUserFromToken(String token) async {
+    final baseUrl = dotenv.env['URL_BACKEND']!;
+    final url = Uri.parse('$baseUrl/api/auth/customer/checkToken?token=$token');
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        return UserEntity.fromJson(data);
+      }
+    } catch (e) {
+      print('Error al obtener usuario desde token: $e');
+    }
+    return null;
   }
 }

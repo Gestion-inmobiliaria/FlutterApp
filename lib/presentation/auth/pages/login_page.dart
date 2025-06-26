@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:inmobiliaria_app/data/sources/auth_remote_datasource_impl.dart';
+import 'package:inmobiliaria_app/domain/providers/auth_provider.dart';
 import 'package:inmobiliaria_app/presentation/auth/pages/sign_up_page.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +13,8 @@ import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final WidgetRef ref;
+  const LoginPage({super.key, required this.ref});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -33,8 +38,22 @@ class _LoginPageState extends State<LoginPage> {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('token', state.token);
 
-            Navigator.of(context).pushReplacement(
+            // ✅ OBTENER USUARIO desde el token y guardar en authProvider
+            final user = await AuthRemoteDataSourceImpl(
+              client: http.Client(),
+            ).getUserFromToken(
+              state.token,
+            ); // Navigate to HomePage and remove all previous routes
+
+            if (user != null && context.mounted) {
+              // ⬇️ IMPORTANTE: actualizar authProvider
+              widget.ref.read(authProvider.notifier).setUser(user);
+            }
+
+            Navigator.pushAndRemoveUntil(
+              context,
               MaterialPageRoute(builder: (_) => const HomePage()),
+              (route) => false,
             );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(

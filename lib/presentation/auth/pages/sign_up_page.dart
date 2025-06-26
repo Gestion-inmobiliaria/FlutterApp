@@ -34,9 +34,10 @@ class _SignUpPageState extends State<SignUpPage> {
           if (state is AuthSuccess) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('token', state.token);
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const HomePage()),
+              (route) => false,
             );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(
@@ -120,7 +121,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               : () {
                                 if (_formKey.currentState!.validate()) {
                                   final user = UserEntity(
-                                    ci: int.parse(ciController.text),
+                                    id: '', // Asignar un id temporal vacío, se generará en el backend
+                                    ci: ciController.text,
                                     name: nameController.text,
                                     email: emailController.text,
                                     password: passwordController.text,

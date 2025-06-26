@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_svg:
-  shared_preferences:
+  shared_preferences: ^2.5.3
   flutter_bloc:
   hydrated_bloc:
   http: 
@@ -46,6 +46,19 @@ dependencies:
   flutter_dotenv:
   
 
+  flutter_map_cache: ^2.0.0+1
+  http_cache_core: ^1.0.1
+  http_cache_hive_store: ^5.0.1
+  hive: ^2.0.0
+  hive_flutter: ^1.1.0
+  dio: ^5.3.3 
+  flutter_riverpod: ^2.6.1
+  # rive: ^0.13.20
+  google_maps_flutter: ^2.12.2
+  url_launcher: ^6.3.1
+  font_awesome_flutter: ^10.8.0
+  permission_handler: ^12.0.0+1
+  flutter_stripe: ^10.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -59,6 +72,10 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   json_serializable:
   bloc_test: ^9.1.4
+  flutter_map: 
+  latlong2: 
+  geolocator: ^14.0.0
+  flutter_map_marker_popup: ^8.0.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -73,7 +90,9 @@ flutter:
      - assets/fonts/
      - assets/images/
      - assets/vectors/
+     - assets/icons/
      - .env
+    #  - .envExample
 
 
 

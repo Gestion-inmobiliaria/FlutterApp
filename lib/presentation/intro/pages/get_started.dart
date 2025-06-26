@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_images.dart';
 import '../bloc/get_started_cubit.dart';
 import '../bloc/get_started_state.dart';
@@ -29,7 +30,12 @@ class GetStartedPage extends StatelessWidget {
                 // Navega a la pantalla de inicio de sesión si el estado es `NavigateToLogin`.
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  MaterialPageRoute(
+                    builder:
+                        (_) => Consumer(
+                          builder: (context, ref, _) => LoginPage(ref: ref),
+                        ),
+                  ),
                 );
               } else if (state is NavigateToRegister) {
                 // Navega a la pantalla de registro si el estado es `NavigateToRegister`.

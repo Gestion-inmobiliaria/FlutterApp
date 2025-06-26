@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:inmobiliaria_app/data/sources/realstate_remote_datasource.dart';
+import 'package:inmobiliaria_app/presentation/home/bloc/realstate_bloc.dart';
+import 'package:inmobiliaria_app/presentation/home/bloc/realstate_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inmobiliaria_app/presentation/home/pages/home_page.dart';
 import 'package:inmobiliaria_app/core/configs/assets/app_vectors.dart';
 import 'package:inmobiliaria_app/presentation/intro/pages/get_started.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // La clase `SplashPage` representa una pantalla de carga inicial (splash screen)
 // que se muestra al iniciar la aplicación. Es un widget con estado (`StatefulWidget`)
@@ -17,6 +22,7 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
   @override
   void initState() {
     super.initState();
@@ -39,15 +45,24 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> redirect() async {
     await Future.delayed(const Duration(seconds: 2));
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await secureStorage.read(key: 'jwt');
 
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(
+          builder:
+              (_) => BlocProvider(
+                create:
+                    (_) =>
+                        RealStateBloc(RealStateRemoteDatasource())
+                          ..add(LoadRealStates()),
+                child: const HomePage(),
+              ),
+        ),
+        (route) => false,
       );
     } else {
       Navigator.pushReplacement(
