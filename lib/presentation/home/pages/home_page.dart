@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:inmobiliaria_app/presentation/home/widgets/visits_section.dart';
+import 'package:inmobiliaria_app/presentation/visits/bloc/visitas_bloc.dart';
 
 import '../widgets/custom_top_header.dart';
 
@@ -120,6 +122,11 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                       const RecommendationSection(),
+                      BlocProvider(
+                        create: (context) => VisitBloc()..add(LoadVisits()),
+                        child: const VisitsSection(),
+                      ),
+                      const SizedBox(height: 80),
                       const SizedBox(
                         height: 80,
                       ), // ⬅️ Padding dinámico inferior
