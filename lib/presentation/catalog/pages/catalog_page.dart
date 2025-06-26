@@ -91,9 +91,10 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  // Obtener una imagen aleatoria de los assets
-  String _getAssetImage(int index) {
-    return _assetImages[index % _assetImages.length];
+  // Obtener una imagen consistente basada en el ID de la propiedad
+  String _getAssetImageForProperty(String propertyId) {
+    final int hashCode = propertyId.hashCode.abs();
+    return _assetImages[hashCode % _assetImages.length];
   }
 
   @override
@@ -649,8 +650,8 @@ class _CatalogPageState extends State<CatalogPage> {
                                       location: location.toString(),
                                       path:
                                           imageUrl ??
-                                          _getAssetImage(
-                                            index,
+                                          _getAssetImageForProperty(
+                                            property.id,
                                           ), // Usar una imagen de los assets como fallback
                                       isHeart: false,
                                       isNetworkImage: imageUrl != null,
@@ -819,7 +820,7 @@ class _CatalogPageState extends State<CatalogPage> {
                     title: property.descripcion,
                     rating: '${property.precio}€',
                     location: location.toString(),
-                    path: imageUrl ?? _getAssetImage(index),
+                    path: imageUrl ?? _getAssetImageForProperty(property.id),
                     isHeart: true, // Siempre true en favoritos
                     isNetworkImage: imageUrl != null,
                     property: property,

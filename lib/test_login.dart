@@ -31,7 +31,7 @@ class TestAuthHelper {
     try {
       final client = http.Client();
       final response = await client.post(
-        Uri.parse('http://10.0.2.2:3000/api/auth/customer/login'),
+        Uri.parse('https://192.168.0.7/api/auth/customer/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': 'test@example.com',

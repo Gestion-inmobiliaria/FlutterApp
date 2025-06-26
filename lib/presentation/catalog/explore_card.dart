@@ -68,11 +68,17 @@ class _ExploreCardState extends State<ExploreCard> {
     }
   }
 
-  // Obtener una imagen de los assets basada en el hash del título
+  // Obtener una imagen de los assets basada en el hash del ID de la propiedad
   String _getFallbackImage() {
-    // Usar el hash del título para seleccionar una imagen consistente para la misma propiedad
-    final int hashCode = widget.title.hashCode.abs();
-    return ExploreCard._assetImages[hashCode % ExploreCard._assetImages.length];
+    if (widget.property != null) {
+      // Usar el hash del ID de la propiedad para seleccionar una imagen consistente
+      final int hashCode = widget.property!.id.hashCode.abs();
+      return ExploreCard._assetImages[hashCode % ExploreCard._assetImages.length];
+    } else {
+      // Fallback si no hay propiedad - usar el hash del título
+      final int hashCode = widget.title.hashCode.abs();
+      return ExploreCard._assetImages[hashCode % ExploreCard._assetImages.length];
+    }
   }
 
   void _toggleFavorite() {

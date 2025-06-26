@@ -95,10 +95,10 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
     return 'assets/icons/default.png';
   }
 
-  // Obtener una imagen de los assets basada en el hash de la descripción
+  // Obtener una imagen de los assets basada en el hash del ID de la propiedad
   String _getFallbackImage() {
-    // Usar el hash de la descripción para seleccionar una imagen consistente para la misma propiedad
-    final int hashCode = widget.property.descripcion.hashCode.abs();
+    // Usar el hash del ID de la propiedad para seleccionar una imagen consistente
+    final int hashCode = widget.property.id.hashCode.abs();
     return _assetImages[hashCode % _assetImages.length];
   }
 
@@ -271,16 +271,12 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
                         Row(
                           children: [
                             CircleAvatar(
-                              backgroundColor: AppColors.primaryColor,
+                              backgroundColor: Colors.white,
                               radius: 20,
-                              child: Text(
-                                widget.realStateName.isNotEmpty
-                                    ? widget.realStateName[0].toUpperCase()
-                                    : 'I',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              child: Image.asset(
+                                _getIconForProperty(),
+                                width: 30,
+                                height: 30,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -433,20 +429,184 @@ class _PropertyDetailPageState extends ConsumerState<PropertyDetailPage> {
 
                         const SizedBox(height: 24),
 
-                        // Sección de descripción completa
+                        // Sección de descripción detallada
                         const Text(
-                          'Descripción',
+                          'Detalles de la Propiedad',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          widget.property.descripcion,
+                        const SizedBox(height: 16),
+                        
+                        // Información detallada con iconos
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              // Estado de la propiedad
+                              _buildDetailItem(
+                                Icons.info_outline,
+                                'Estado',
+                                widget.property.estado == 'disponible'
+                                    ? 'Disponible para adquisición'
+                                    : widget.property.estado == 'vendido'
+                                        ? 'Propiedad vendida'
+                                        : widget.property.estado == 'alquilado'
+                                            ? 'Actualmente alquilada'
+                                            : widget.property.estado == 'reservado'
+                                                ? 'Reservada temporalmente'
+                                                : 'Estado no especificado',
+                                widget.property.estado == 'disponible'
+                                    ? Colors.green
+                                    : widget.property.estado == 'vendido'
+                                        ? Colors.red
+                                        : widget.property.estado == 'alquilado'
+                                            ? Colors.blue
+                                            : widget.property.estado == 'reservado'
+                                                ? Colors.orange
+                                                : Colors.grey,
+                              ),
+                              
+                              const SizedBox(height: 12),
+                              
+                              // Área construida
+                              _buildDetailItem(
+                                Icons.straighten,
+                                'Área Construida',
+                                '${widget.property.area.toStringAsFixed(0)} metros cuadrados',
+                                AppColors.primaryColor,
+                              ),
+                              
+                              const SizedBox(height: 12),
+                              
+                              // Habitaciones
+                              _buildDetailItem(
+                                Icons.bedroom_parent,
+                                'Habitaciones',
+                                widget.property.nroHabitaciones != null && widget.property.nroHabitaciones! > 0
+                                    ? '${widget.property.nroHabitaciones} habitación${widget.property.nroHabitaciones! > 1 ? 'es' : ''} cómoda${widget.property.nroHabitaciones! > 1 ? 's' : ''}'
+                                    : 'Número de habitaciones no especificado',
+                                Colors.purple,
+                              ),
+                              
+                              const SizedBox(height: 12),
+                              
+                              // Baños
+                              _buildDetailItem(
+                                Icons.bathroom,
+                                'Baños',
+                                widget.property.nroBanos != null && widget.property.nroBanos! > 0
+                                    ? '${widget.property.nroBanos} baño${widget.property.nroBanos! > 1 ? 's' : ''} completo${widget.property.nroBanos! > 1 ? 's' : ''}'
+                                    : 'Número de baños no especificado',
+                                Colors.blue,
+                              ),
+                              
+                              if (widget.property.nroEstacionamientos != null && widget.property.nroEstacionamientos! > 0) ...[
+                                const SizedBox(height: 12),
+                                
+                                // Estacionamientos
+                                _buildDetailItem(
+                                  Icons.local_parking,
+                                  'Estacionamientos',
+                                  '${widget.property.nroEstacionamientos} espacio${widget.property.nroEstacionamientos! > 1 ? 's' : ''} de estacionamiento privado${widget.property.nroEstacionamientos! > 1 ? 's' : ''}',
+                                  Colors.orange,
+                                ),
+                              ],
+                              
+                              if (widget.property.categoria != null) ...[
+                                const SizedBox(height: 12),
+                                
+                                // Categoría
+                                _buildDetailItem(
+                                  Icons.category,
+                                  'Tipo de Propiedad',
+                                  _getCategoryDescription(widget.property.categoria!),
+                                  Colors.teal,
+                                ),
+                              ],
+                              
+                              if (widget.property.modalidad != null) ...[
+                                const SizedBox(height: 12),
+                                
+                                // Modalidad
+                                _buildDetailItem(
+                                  Icons.handshake,
+                                  'Modalidad',
+                                  _getModalityDescription(widget.property.modalidad!),
+                                  Colors.indigo,
+                                ),
+                              ],
+                              
+                              const SizedBox(height: 12),
+                              
+                              // Precio detallado
+                              _buildDetailItem(
+                                Icons.monetization_on,
+                                'Valor',
+                                'Precio de ${widget.property.modalidad?.toLowerCase() == 'venta' ? 'venta' : 'alquiler'}: ${widget.property.precio.toStringAsFixed(0)}€',
+                                Colors.green,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Descripción del propietario
+                        const Text(
+                          'Descripción del Propietario',
                           style: TextStyle(
-                            color: Colors.grey.shade700,
-                            height: 1.5,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.format_quote,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Lo que dice el propietario:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade800,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _getOwnerDescription(),
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  height: 1.4,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
@@ -1199,6 +1359,190 @@ Me gustaría recibir más información. Gracias.""";
         ),
       ],
     );
+  }
+
+  Widget _buildDetailItem(IconData icon, String label, String description, Color iconColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: iconColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getCategoryDescription(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'casa':
+        return 'Casa independiente con espacios privados y mayor privacidad';
+      case 'departamento':
+        return 'Departamento en edificio con servicios compartidos';
+      case 'terreno':
+        return 'Terreno disponible para construcción o inversión';
+      case 'oficina':
+        return 'Espacio comercial ideal para oficinas y negocios';
+      case 'local comercial':
+        return 'Local comercial en zona de alto tráfico peatonal';
+      case 'penthouse':
+        return 'Penthouse de lujo con vistas panorámicas exclusivas';
+      case 'villa':
+        return 'Villa premium con amplios jardines y amenidades';
+      default:
+        return 'Propiedad de tipo $categoria';
+    }
+  }
+
+  String _getModalityDescription(String modalidad) {
+    switch (modalidad.toLowerCase()) {
+      case 'venta':
+        return 'Propiedad disponible para compra definitiva';
+      case 'alquiler':
+        return 'Propiedad disponible para arrendamiento mensual';
+      case 'anticrético':
+        return 'Modalidad de alquiler con depósito de garantía';
+      case 'venta/alquiler':
+        return 'Disponible tanto para venta como para alquiler';
+      default:
+        return 'Modalidad: $modalidad';
+    }
+  }
+
+  String _getOwnerDescription() {
+    // Usar el ID de la propiedad para generar una descripción consistente
+    final int hashCode = widget.property.id.hashCode.abs();
+    final List<String> descriptions = [
+      // Descripción 1 - Casa familiar
+      "🏡 ¡Hermosa casa familiar en venta! 💕\n\n"
+      "Después de años maravillosos aquí, mi familia y yo hemos decidido vender nuestra querida casa. Es perfecta para una familia que busca tranquilidad y comodidad.\n\n"
+      "✨ Lo que más me gusta:\n"
+      "• Jardín amplio donde los niños pueden jugar 🌳\n"
+      "• Cocina con isla central - perfecta para reuniones familiares 👨‍🍳\n"
+      "• Dormitorio principal con baño en suite y walk-in closet 🛏️\n"
+      "• Garaje para 2 autos con depósito adicional 🚗\n"
+      "• Vecindario súper tranquilo y seguro 🏘️\n\n"
+      "📞 ¡Llámame para coordinar una visita! Estoy seguro que te va a encantar tanto como a nosotros.",
+
+      // Descripción 2 - Departamento moderno
+      "🌟 ¡Departamento de lujo en el mejor sector! 🏙️\n\n"
+      "Mudanza por trabajo - vendo mi hermoso departamento con una vista INCREÍBLE de la ciudad. Está prácticamente nuevo, me mudé hace solo 2 años.\n\n"
+      "🔥 Características TOP:\n"
+      "• Vista panorámica 360° - amaneceres espectaculares 🌅\n"
+      "• Cocina integrada con electrodomésticos premium 🍳\n"
+      "• Balcón terraza perfecto para BBQ 🥩\n"
+      "• 2 estacionamientos subterráneos + bodega 🚘\n"
+      "• Gym, piscina y sala de eventos en el edificio 🏊‍♂️\n"
+      "• Portería 24/7 y sistema de seguridad 🔒\n\n"
+      "💯 ¡Una oportunidad única! El edificio es muy exclusivo.",
+
+      // Descripción 3 - Casa con piscina
+      "🏊‍♀️ ¡Casa con piscina - perfecta para el verano! ☀️\n\n"
+      "¡Hola! Vendo mi casa porque me voy a vivir al extranjero 🌎 Ha sido el hogar perfecto para mi familia durante 8 años.\n\n"
+      "🏡 Lo que la hace especial:\n"
+      "• Piscina climatizada con sistema de filtros nuevos 💧\n"
+      "• Quincho con parrilla y horno de barro 🔥\n"
+      "• 4 dormitorios - el principal con vestidor y baño 🛏️\n"
+      "• Sala de estar con chimenea para el invierno 🔥\n"
+      "• Jardín con frutales (limones, naranjas) 🍊\n"
+      "• Cerca de colegios y supermercados 🏫\n\n"
+      "📲 ¡Agenda tu visita! Te aseguro que quedas enamorado/a.",
+
+      // Descripción 4 - Penthouse
+      "🌆 ¡PENTHOUSE EXCLUSIVO - Una joya! 💎\n\n"
+      "Por cambio de ciudad, vendo mi penthouse en el piso 18. Es absolutamente único en la zona y las vistas son de otro mundo 🌃\n\n"
+      "⭐ Lujo en cada detalle:\n"
+      "• Terraza de 80m² con jacuzzi privado 🛁\n"
+      "• Cocina gourmet con isla y electrodomésticos importados 👨‍🍳\n"
+      "• 3 suites con baño completo cada una 🚿\n"
+      "• Domótica completa - todo automatizado 📱\n"
+      "• 3 estacionamientos + depósito de 20m² 🚗\n"
+      "• Ascensor privado directo al departamento 🛗\n\n"
+      "💰 Inversión de lujo - se valoriza cada año. ¡No vas a encontrar otro igual!",
+
+      // Descripción 5 - Casa rústica
+      "🏚️ ¡Casa rústica con mucho potencial! 🔨\n\n"
+      "Vendo esta hermosa casa que heredé de mis abuelos. Tiene mucha historia y un estilo único que ya no se ve. Perfecta para alguien que quiera restaurar o remodelar a su gusto 🎨\n\n"
+      "🏗️ Lo que ofrece:\n"
+      "• Estructura sólida de ladrillo y vigas de madera 🧱\n"
+      "• Techo alto con tejas coloniales originales 🏠\n"
+      "• Patio interno con pozo de agua 💧\n"
+      "• Pisos de mosaico original en buen estado 🔲\n"
+      "• Terreno amplio para ampliación 📐\n"
+      "• Ubicación privilegiada cerca del centro histórico 🏛️\n\n"
+      "🎯 ¡Ideal para inversores o amantes de lo clásico! Precio negociable.",
+
+      // Descripción 6 - Departamento familiar
+      "👨‍👩‍👧‍👦 ¡Depto familiar súper cómodo! 🏠\n\n"
+      "Nos mudamos a una casa más grande y vendemos nuestro querido departamento. Ha sido perfecto para nosotros - 3 dormitorios amplios y mucha luz natural ☀️\n\n"
+      "💝 Pensado en familias:\n"
+      "• Living-comedor integrado súper espacioso 🛋️\n"
+      "• Cocina con desayunador y lavadero separado 🍽️\n"
+      "• Baño completo + toilette para visitas 🚿\n"
+      "• Balcón con parrilla incorporada 🥩\n"
+      "• Calefacción central en todos los ambientes 🔥\n"
+      "• Edificio con ascensor y portero eléctrico 🏢\n\n"
+      "📚 A 2 cuadras del colegio y parque infantil. ¡Súper recomendado para familias!",
+
+      // Descripción 7 - Casa moderna
+      "🏡 ¡Casa moderna con terminaciones de primera! ✨\n\n"
+      "Construimos esta casa hace 3 años con los mejores materiales. Por temas de trabajo nos vamos del país y la vendemos con mucho dolor 😢\n\n"
+      "🚀 Última tecnología:\n"
+      "• Paneles solares - factura de luz nula 💡\n"
+      "• Pisos radiantes en toda la casa 🔥\n"
+      "• Ventanas DVH - súper silencioso 🔇\n"
+      "• Cocina con isla central y campana industrial 👨‍🍳\n"
+      "• Master bedroom con baño completo y vestidor 👗\n"
+      "• Sistema de seguridad con cámaras 📹\n\n"
+      "🎁 Incluye TODOS los muebles y electrodomésticos. ¡Lista para mudarse!",
+
+      // Descripción 8 - Terreno
+      "🌱 ¡Terreno con proyecto aprobado! 📋\n\n"
+      "Vendo hermoso terreno donde iba a construir la casa de mis sueños, pero cambié de planes. Ya tiene todos los permisos y proyecto arquitectónico aprobado 📐\n\n"
+      "🏗️ Listo para construir:\n"
+      "• Terreno de esquina - doble frente 🚪\n"
+      "• Servicios de agua, luz y gas en vereda ⚡\n"
+      "• Proyecto para casa de 200m² aprobado ✅\n"
+      "• Zona residencial exclusiva en crecimiento 🏘️\n"
+      "• A 5 min del shopping y centro comercial 🛒\n"
+      "• Excelente para inversión - se valoriza mucho 📈\n\n"
+      "💼 Incluyo planos y permisos. ¡Es tu oportunidad de construir tu hogar ideal!",
+    ];
+
+    return descriptions[hashCode % descriptions.length];
   }
 
   Widget _buildMap() {
